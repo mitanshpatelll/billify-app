@@ -1,47 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Redirect } from 'expo-router';
 
-import { env } from '@/config/env';
-import { colors } from '@/theme/colors';
+import { useSession } from '@/features/auth/session-store';
+import { useShop } from '@/features/shop/shop-store';
 
-// Placeholder until slice 1 (auth + onboarding) adds the real redirect.
+// Shop owner → billing (or setup first), customer → my bills, otherwise → welcome.
 export default function Index() {
-  return (
-    <View style={styles.screen}>
-      <View style={styles.tile}>
-        <Text style={styles.label}>Billify</Text>
-        <Text style={styles.title}>Hello, counter</Text>
-        <Text style={styles.meta}>Variant: {env.variant}</Text>
-        <Text style={styles.meta}>API: {env.apiUrl}</Text>
-      </View>
-    </View>
-  );
-}
+  const signedIn = useSession((state) => state.signedIn);
+  const role = useSession((state) => state.role);
+  const setupDone = useShop((state) => state.setupDone);
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: colors.background,
-  },
-  tile: {
-    gap: 8,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.onSurfaceVariant,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  meta: {
-    fontSize: 15,
-    color: colors.onSurfaceVariant,
-  },
-});
+  if (!signedIn) return <Redirect href="/welcome" />;
+  if (role === 'customer') return <Redirect href="/me/bills" />;
+  return <Redirect href={setupDone ? '/shop/bill' : '/shop/setup'} />;
+}

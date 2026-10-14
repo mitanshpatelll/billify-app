@@ -28,9 +28,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: VARIANTS[variant].appId,
     adaptiveIcon: {
-      backgroundColor: '#F1F3F0',
+      backgroundColor: '#1F5C3B',
       foregroundImage: './assets/android-icon-foreground.png',
-      backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
@@ -38,7 +37,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: ['expo-router'],
+  plugins: [
+    'expo-router',
+    'expo-font',
+    [
+      'expo-splash-screen',
+      { image: './assets/splash-icon.png', imageWidth: 96, backgroundColor: '#F1F3F0' },
+    ],
+  ],
   experiments: {
     typedRoutes: true,
   },
