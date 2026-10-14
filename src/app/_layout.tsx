@@ -5,11 +5,14 @@ import {
   Manrope_700Bold,
   useFonts,
 } from '@expo-google-fonts/manrope';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
+import { queryClient } from '@/api/query-client';
 import { useSession } from '@/features/auth/session-store';
 import { colors } from '@/theme/tokens';
 
@@ -35,17 +38,20 @@ export default function RootLayout() {
 
   // Route guards: when sign-in state changes, screens that are no longer allowed drop out
   // of the history and the router falls back to index, which picks the right place.
+  // The shop app is native only (D5): the web build serves the bill page and customer routes.
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Stack
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
       >
         <Stack.Screen name="index" />
+        {/* 21 Public bill: open to everyone, signed in or not. */}
+        <Stack.Screen name="b/[token]" />
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="(auth)/welcome" />
           <Stack.Screen name="(auth)/sign-in" />
         </Stack.Protected>
-        <Stack.Protected guard={signedIn && role === 'shop'}>
+        <Stack.Protected guard={signedIn && role === 'shop' && Platform.OS !== 'web'}>
           <Stack.Screen name="shop" />
         </Stack.Protected>
         <Stack.Protected guard={signedIn && role === 'customer'}>
@@ -53,6 +59,6 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
       <StatusBar style="dark" />
-    </>
+    </QueryClientProvider>
   );
 }

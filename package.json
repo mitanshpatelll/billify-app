@@ -4,6 +4,7 @@
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
+    "@tanstack/react-query": "^5.104.2",
     "expo": "~57.0.28",
     "expo-constants": "~57.0.21",
     "expo-crypto": "~57.0.4",
@@ -15,7 +16,9 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "lucide-react-native": "^1.55.0",
+    "openapi-fetch": "^0.17.0",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-nitro-modules": "0.37.1",
     "react-native-qrcode-svg": "^6.3.26",
@@ -23,6 +26,7 @@
     "react-native-screens": "~4.26.2",
     "react-native-svg": "15.15.4",
     "react-native-unistyles": "^3.5.2",
+    "react-native-web": "^0.21.4",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -32,6 +36,7 @@
     "eslint-config-expo": "~57.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3"
   },
@@ -42,6 +47,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "api:types": "openapi-typescript ${API_DOCS_URL:-http://localhost:3000/docs/openapi.json} -o src/api/schema.d.ts",
     "format": "prettier --write .",
     "doctor": "pnpm dlx expo-doctor"
   },

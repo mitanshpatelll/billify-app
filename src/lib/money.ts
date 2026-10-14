@@ -18,6 +18,11 @@ export function formatRupees(paise: number, { showPaise = true } = {}): string {
   return `${sign}₹${groupIndian(rupees)}.${rest}`;
 }
 
+/** One bill line: qty × unit price, rounded to whole paise (0.25 kg × ₹44.00 → 1100). */
+export function lineTotalPaise(qty: number, unitPricePaise: number): number {
+  return Math.round(qty * unitPricePaise);
+}
+
 /** Paise as a plain decimal for UPI links: 20200 → "202.00". */
 export function toDecimalRupees(paise: number): string {
   return (Math.round(paise) / 100).toFixed(2);

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { Product } from '@/features/catalog/catalog-store';
+import { lineTotalPaise as lineTotal } from '@/lib/money';
 import { firstQty, qtyStep, type Unit } from '@/lib/units';
 
 // Matches the cart line in Billify - Screen Flow (01 Billing).
@@ -70,7 +71,7 @@ export const useCart = create<CartState>()((set) => ({
 }));
 
 export function lineTotalPaise(line: CartLine): number {
-  return Math.round(line.qty * line.unitPricePaise);
+  return lineTotal(line.qty, line.unitPricePaise);
 }
 
 export function cartTotalPaise(lines: CartLine[]): number {

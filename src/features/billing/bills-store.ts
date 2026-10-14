@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 
 import { newId, newPublicToken } from '@/lib/ids';
+import type { PaymentMethod } from '@/lib/payments';
 
 import { cartTotalPaise, type CartLine } from './cart-store';
 
-export type PaymentMethod = 'cash' | 'upi' | 'khata';
+export type { PaymentMethod };
+export { paymentLabel } from '@/lib/payments';
 
 export type Payment = { method: PaymentMethod; amountPaise: number };
 
@@ -49,8 +51,3 @@ export const useBills = create<BillsState>()((set) => ({
     return bill;
   },
 }));
-
-export function paymentLabel(payments: Payment[]): string {
-  const names = { cash: 'Cash', upi: 'UPI', khata: 'Khata' } as const;
-  return payments.map((payment) => names[payment.method]).join(' + ');
-}
