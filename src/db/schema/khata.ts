@@ -1,6 +1,6 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import type { KhataKind } from '@/lib/domain';
+import type { KhataKind, SettlementMethod } from '@/lib/domain';
 
 import { syncColumns } from './columns';
 
@@ -23,6 +23,8 @@ export const khataEntries = sqliteTable(
     kind: text('kind').$type<KhataKind>().notNull(),
     deltaPaise: integer('delta_paise').notNull(),
     refId: text('ref_id'),
+    /** Settlements only: cash or UPI (the day's cash count includes khata paid in cash). */
+    method: text('method').$type<SettlementMethod>(),
   },
   (t) => [index('khata_entries_customer_idx').on(t.customerId)],
 );

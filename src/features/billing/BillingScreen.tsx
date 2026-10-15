@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, PackagePlus, Plus, ScanBarcode, Search } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, View, type TextInput } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { env } from '@/config/env';
@@ -54,6 +54,13 @@ export function BillingScreen() {
     focusedRef.current = focused;
   }, [focused]);
   const params = useLocalSearchParams<{ scan?: string }>();
+  const searchRef = useRef<TextInput>(null);
+
+  // Leaving billing (quick add, checkout, another tab) drops the search focus. Otherwise iOS hands
+  // the focus back on return and the keyboard covers the tab bar and the pay bar.
+  useEffect(() => {
+    if (!focused) searchRef.current?.blur();
+  }, [focused]);
 
   const total = cartTotalPaise(lines);
 
@@ -135,6 +142,7 @@ export function BillingScreen() {
       <BarcodeScanner onScan={handleScan} active={focused} />
 
       <TextField
+        ref={searchRef}
         icon={Search}
         value={query}
         onChangeText={setQuery}

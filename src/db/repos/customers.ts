@@ -63,3 +63,42 @@ export function searchCustomers(db: Db, query: string, limit = 50): CustomerRow[
     .limit(limit)
     .all();
 }
+
+/** Edits name / phone. Only fields that change are written and pushed (last write wins). */
+export function updateCustomer(
+  db: Db,
+  id: string,
+  input: { name?: string; phone?: string | null },
+  now = new Date(),
+): CustomerRow {
+  return db.transaction((tx) => {
+    const current = getCustomer(tx, id);
+    if (!current || current.deletedAt) {
+      throw new RepoError('CUSTOMER_NOT_FOUND', 'This customer is gone');
+    }
+    const changed: Partial<Pick<CustomerRow, 'name' | 'phone'>> = {};
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (name.length < 1 || name.length > 80) {
+        throw new RepoError('INVALID_NAME', 'Customer name must be 1 to 80 characters');
+      }
+      if (name !== current.name) changed.name = name;
+    }
+    if (input.phone !== undefined) {
+      let phone: string | null = null;
+      if (input.phone !== null && input.phone.trim()) {
+        phone = normalizePhone(input.phone);
+        if (!phone) throw new RepoError('INVALID_PHONE', 'Enter a 10-digit mobile number');
+      }
+      if (phone !== current.phone) changed.phone = phone;
+    }
+    if (Object.keys(changed).length === 0) return current;
+    const at = now.toISOString();
+    tx.update(customers)
+      .set({ ...changed, updatedAt: at })
+      .where(eq(customers.id, id))
+      .run();
+    enqueue(tx, 'customers', 'update', { id, ...changed }, at);
+    return { ...current, ...changed, updatedAt: at };
+  });
+}

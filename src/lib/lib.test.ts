@@ -74,3 +74,16 @@ describe('parseQty', () => {
     expect(parseQty(input)).toBe(expected);
   });
 });
+
+describe('dates', () => {
+  it('weeks start on Monday, local time', () => {
+    const { startOfWeek, ago } = jest.requireActual<typeof import('./dates')>('./dates');
+    const thursday = new Date(2026, 9, 15, 18, 30); // Thu 15 Oct 2026, local
+    expect(startOfWeek(thursday)).toEqual(new Date(2026, 9, 12, 0, 0));
+    const sunday = new Date(2026, 9, 18, 9, 0);
+    expect(startOfWeek(sunday)).toEqual(new Date(2026, 9, 12, 0, 0));
+    expect(ago(new Date(2026, 9, 15, 8).toISOString(), thursday)).toBe('today');
+    expect(ago(new Date(2026, 9, 14, 23).toISOString(), thursday)).toBe('yesterday');
+    expect(ago(new Date(2026, 9, 11, 9).toISOString(), thursday)).toBe('4 days ago');
+  });
+});

@@ -1,0 +1,1 @@
+ALTER TABLE `khata_entries` ADD `method` text;

@@ -36,3 +36,13 @@ export function reorderText(shopName: string, lines: ReorderLine[]): string {
   const items = lines.map((line) => `• ${line.name}: ${formatQty(line.qty, line.unit)}`);
   return [`Order from ${shopName}`, ...items].join('\n');
 }
+
+type Reminder = { customerName: string; duePaise: number; shopName: string; upiId: string };
+
+/** 15 Customer khata → WhatsApp: a polite reminder with the amount and how to pay. */
+export function khataReminderText({ customerName, duePaise, shopName, upiId }: Reminder): string {
+  return (
+    `Namaste ${customerName}, ${formatRupees(duePaise)} is due at ${shopName}. ` +
+    `You can pay at the shop, or by UPI to ${upiId}. Thank you!`
+  );
+}

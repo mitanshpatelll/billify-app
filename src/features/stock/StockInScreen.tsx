@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { CircleCheck, PackagePlus, Plus, Search } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, View } from 'react-native';
+import { AccessibilityInfo, View, type TextInput } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { env } from '@/config/env';
@@ -43,6 +43,10 @@ export function StockInScreen() {
   }, [focused]);
   const params = useLocalSearchParams<{ scan?: string }>();
   const saving = useRef(false);
+  const searchRef = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!focused) searchRef.current?.blur(); // see BillingScreen
+  }, [focused]);
 
   // Scanning the same item again adds one more pack; a new item gets its own line on top.
   const receive = useCallback((product: Pick<Product, 'id' | 'name' | 'unit'>) => {
@@ -130,6 +134,7 @@ export function StockInScreen() {
       <BarcodeScanner onScan={handleScan} active={focused} hint="Scan each item that came in" />
 
       <TextField
+        ref={searchRef}
         icon={Search}
         value={query}
         onChangeText={setQuery}

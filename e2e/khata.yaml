@@ -1,0 +1,51 @@
+# Flow 4 (User Flows) with flow 2's khata payment: a bill on khata for a new customer adds to
+# their balance by itself; the shopkeeper records part of it paid back in cash.
+appId: com.glitchover.billify.dev
+---
+- runFlow: _new-shop.yaml
+
+# A loose item, billed to a new customer on khata
+- tapOn: 'Search items'
+- inputText: 'Atta'
+- tapOn: 'No item called "Atta".*'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '420'
+- tapOn: 'New item'
+- tapOn: 'Add to bill'
+- tapOn: 'Checkout'
+- tapOn: 'Pick customer'
+- tapOn: 'New customer.*'
+- inputText: 'Ramesh Yadav'
+- tapOn:
+    text: 'Mobile number \(optional\)'
+    index: 1
+- inputText: '9876504521'
+- tapOn: 'New customer' # the title: closes the phone pad
+- tapOn: 'Save customer'
+- assertVisible: 'Customer Ramesh Yadav.*'
+- tapOn: 'Khata, Add to due'
+- assertVisible: '₹420.00 will be added to Ramesh Yadav.s khata'
+- tapOn: 'Add to khata'
+- assertVisible: 'Bill saved'
+- tapOn: 'Start a new bill'
+- assertVisible: 'Bill A-002' # the modal has closed
+
+# 04 Khata: the balance is there without doing anything else
+- tapOn: 'Khata, tab.*'
+- assertVisible: '₹420.00'
+- assertVisible: 'from 1 customer'
+- tapOn: 'Ramesh Yadav.*'
+
+# 15 Customer khata: record ₹100 paid in cash
+- assertVisible: 'Due'
+- tapOn: 'Record payment'
+- inputText: '100'
+- tapOn: 'History' # a plain label: closes the number pad
+- tapOn: 'Save payment'
+- assertVisible: '₹320.00'
+- assertVisible: '.*Paid, cash.*'
+- assertVisible: '.*Bill A-001.*'
+- tapOn: 'Back'
+- assertVisible: '.*Ramesh Yadav.*₹320.00.*'

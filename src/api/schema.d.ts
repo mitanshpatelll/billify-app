@@ -421,6 +421,8 @@ export interface paths {
                       deltaPaise: number;
                       /** Format: uuid */
                       refId: string | null;
+                      /** @enum {string|null} */
+                      method: 'cash' | 'upi' | null;
                     };
                   }
               )[];

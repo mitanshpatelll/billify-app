@@ -1,5 +1,6 @@
 export * as billsRepo from './bills';
 export * as customersRepo from './customers';
+export * as khataRepo from './khata';
 export * as productsRepo from './products';
 export * as shopRepo from './shop';
 export * as stockRepo from './stock';

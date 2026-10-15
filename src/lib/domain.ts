@@ -15,6 +15,10 @@ export type SyncedTable = (typeof SYNCED_TABLES)[number];
 export const STOCK_REASONS = ['sale', 'purchase', 'adjustment', 'return', 'void'] as const;
 export type StockReason = (typeof STOCK_REASONS)[number];
 
+// How a customer paid back khata (a settlement): cash in the drawer or UPI.
+export const SETTLEMENT_METHODS = ['cash', 'upi'] as const;
+export type SettlementMethod = (typeof SETTLEMENT_METHODS)[number];
+
 // credit_sale adds to what the customer owes, settlement takes it off, adjustment is either.
 export const KHATA_KINDS = ['credit_sale', 'settlement', 'adjustment'] as const;
 export type KhataKind = (typeof KHATA_KINDS)[number];

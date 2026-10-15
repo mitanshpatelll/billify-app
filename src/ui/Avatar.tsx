@@ -16,7 +16,13 @@ export function initials(name: string): string {
 /** Initials in a soft-square, radius 10. `settled` turns it neem. */
 export function Avatar({ name, settled = false }: { name: string; settled?: boolean }) {
   return (
-    <View style={[styles.avatar, settled && styles.settled]} accessible={false}>
+    // Decoration only: the name next to it is what a screen reader should say.
+    <View
+      style={[styles.avatar, settled && styles.settled]}
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <Text variant="bodyStrong" tone={settled ? 'primary' : 'muted'}>
         {initials(name)}
       </Text>

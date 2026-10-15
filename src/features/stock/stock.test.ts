@@ -1,4 +1,4 @@
-import { reorderText } from '@/features/sharing/links';
+import { khataReminderText, reorderText } from '@/features/sharing/links';
 
 import { suggestedOrder } from './stock';
 
@@ -29,4 +29,17 @@ it('builds the reorder message', () => {
       { name: 'Sugar (loose)', qty: 25, unit: 'kg' },
     ]),
   ).toBe('Order from Sharma Kirana\n• Maggi Masala 70 g: 48\n• Sugar (loose): 25 kg');
+});
+
+it('builds the khata reminder', () => {
+  expect(
+    khataReminderText({
+      customerName: 'Ramesh Yadav',
+      duePaise: 124_000,
+      shopName: 'Sharma Kirana',
+      upiId: 'sharmakirana@okaxis',
+    }),
+  ).toBe(
+    'Namaste Ramesh Yadav, ₹1,240.00 is due at Sharma Kirana. You can pay at the shop, or by UPI to sharmakirana@okaxis. Thank you!',
+  );
 });

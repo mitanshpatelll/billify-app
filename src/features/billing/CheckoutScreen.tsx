@@ -145,7 +145,10 @@ export function CheckoutScreen() {
         </Text>
       </Tile>
 
-      <Tile onPress={() => router.push('/shop/customer-picker')} accessibilityLabel="Pick customer">
+      <Tile
+        onPress={() => router.push('/shop/customer-picker')}
+        accessibilityLabel={customer ? `Customer ${customer.name}. Change` : 'Pick customer'}
+      >
         <View style={styles.customerRow}>
           {customer ? (
             <Avatar name={customer.name} />
