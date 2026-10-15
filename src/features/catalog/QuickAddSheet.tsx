@@ -26,7 +26,9 @@ const UNIT_OPTIONS = UNITS.map((unit) => ({ value: unit, label: unit }));
 
 /** 11 Quick add item: an unknown barcode (or a name search miss) becomes a product, then a cart line. */
 export function QuickAddSheet() {
-  const params = useLocalSearchParams<{ barcode?: string; name?: string }>();
+  // then=stock: opened from 13 Stock in. The item is saved with its stock, not put in the cart.
+  const params = useLocalSearchParams<{ barcode?: string; name?: string; then?: 'stock' }>();
+  const forStock = params.then === 'stock';
   const addToCart = useCart((state) => state.add);
 
   const [name, setName] = useState(params.name ?? '');
@@ -73,7 +75,7 @@ export function QuickAddSheet() {
         trackStock,
         openingStock: trackStock ? (openingQty ?? 0) : undefined,
       });
-      addToCart(product);
+      if (!forStock) addToCart(product);
       router.back();
     } catch (err) {
       saving.current = false;
@@ -193,7 +195,7 @@ export function QuickAddSheet() {
           </View>
         </Tile>
 
-        <Button label="Add to bill" icon={Plus} onPress={save} />
+        <Button label={forStock ? 'Save item' : 'Add to bill'} icon={Plus} onPress={save} />
       </ScrollView>
     </View>
   );

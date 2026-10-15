@@ -30,6 +30,8 @@ export function Screen({
       style={styles.flex}
       contentContainerStyle={[styles.content, !footer && bottomSafe && styles.contentBottomSafe]}
       keyboardShouldPersistTaps="handled"
+      // Number pads have no Done key: dragging the screen puts the keyboard away.
+      keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
     >
       {children}

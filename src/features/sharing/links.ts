@@ -1,5 +1,6 @@
 import { env } from '@/config/env';
 import { formatRupees } from '@/lib/money';
+import { formatQty, type Unit } from '@/lib/units';
 
 /** Public bill page: same Expo route on the web, opens without sign-in. */
 export function billUrl(publicToken: string): string {
@@ -26,4 +27,12 @@ export function billShareText({
   publicToken,
 }: BillShare): string {
   return `${shopName} bill ${billNumber} ${formatRupees(totalPaise)}\n${billUrl(publicToken)}`;
+}
+
+type ReorderLine = { name: string; qty: number; unit: Unit };
+
+/** 14 Low stock → WhatsApp to the distributor: plain list, the shop's name on top. */
+export function reorderText(shopName: string, lines: ReorderLine[]): string {
+  const items = lines.map((line) => `• ${line.name}: ${formatQty(line.qty, line.unit)}`);
+  return [`Order from ${shopName}`, ...items].join('\n');
 }

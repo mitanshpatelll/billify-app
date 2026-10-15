@@ -1,0 +1,85 @@
+# Flow 3 (User Flows): stock in by scan (an unknown item is added with its count), the stock tab,
+# a warn level, the low-stock list, and fixing a count. Scans come in as deep links (dev builds).
+appId: com.glitchover.billify.dev
+---
+- runFlow: _new-shop.yaml
+
+- tapOn: 'Stock, tab.*'
+- assertVisible: 'No items yet'
+- tapOn: 'Stock in'
+
+# Unknown barcode → quick add (stock mode): saved with 2 on the shelf, not put in a cart
+- openLink: billify://shop/stock/in?scan=8904043901015
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible: 'New item'
+    timeout: 10000
+- tapOn:
+    text: 'Item name'
+    index: 1
+- inputText: 'Tata Salt 1 kg'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '28'
+- tapOn:
+    text: 'In stock now \(pcs\)'
+    index: 1
+- inputText: '2'
+- tapOn: 'New item'
+- tapOn: 'Save item'
+
+# Now known: each scan adds one pack to the received list, + adds more
+- openLink: billify://shop/stock/in?scan=8904043901015
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible: 'Received · 1'
+    timeout: 10000
+- tapOn: 'More Tata Salt 1 kg'
+- tapOn: 'More Tata Salt 1 kg'
+- assertVisible: 'Quantity \+3'
+- tapOn: 'Save 1 item'
+
+# 12 Stock: 2 + 3 = 5
+- extendedWaitUntil:
+    visible: 'Tata Salt 1 kg.*'
+    timeout: 10000
+- assertVisible: '.*Tata Salt 1 kg.*5.*'
+
+# Product detail: warn at 6 → it becomes low
+- tapOn: 'Tata Salt 1 kg.*'
+- tapOn: 'Edit item.*'
+- tapOn:
+    text: 'Warn me at \(pcs\)'
+    index: 1
+- inputText: '6'
+- tapOn: 'Track stock' # a plain label: closes the number pad, which has no Done key
+- tapOn: 'Save item'
+- assertVisible: 'Warn at'
+- tapOn: 'Back'
+- assertVisible: '.*Tata Salt 1 kg.*5 left.*'
+
+# 14 Low stock lists it with a suggested order (6 × 2 − 5 = 7)
+- tapOn: '.*items low on stock.*'
+- assertVisible: '1 item is running low'
+- assertVisible: 'Quantity 7'
+- assertVisible: 'Share on WhatsApp · 1 item'
+- tapOn: 'Back'
+
+# Fix the count: the shelf really has 9
+- tapOn: 'Tata Salt 1 kg.*'
+- tapOn: 'Fix the count.*'
+- inputText: '9'
+- tapOn: 'Item' # the screen title: a plain label closes the number pad
+- tapOn: 'Save count'
+- assertVisible: 'Count fixed.*'
+- tapOn: 'Back'
+- assertVisible: '.*Tata Salt 1 kg.*9.*'

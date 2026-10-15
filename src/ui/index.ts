@@ -13,6 +13,7 @@ export { QtyStepper } from './QtyStepper';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export { Text, type TextTone } from './Text';
+export { TextButton } from './TextButton';
 export { TextField } from './TextField';
 export { Tile, TileRow, type TileVariant } from './Tile';
 export { Toggle } from './Toggle';

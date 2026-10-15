@@ -125,3 +125,74 @@ export function quickKeyProducts(db: Db, limit = 8): ProductRow[] {
     .limit(limit)
     .all();
 }
+
+export type ProductPatch = Partial<
+  Pick<ProductRow, 'barcode' | 'name' | 'pricePaise' | 'mrpPaise' | 'lowStockAt' | 'trackStock'>
+>;
+
+/**
+ * Edits a product. Only fields that really change are written and pushed (an update mutation
+ * with the id and those fields; last write wins on the server). Same rules as a new product.
+ */
+export function updateProduct(
+  db: Db,
+  id: string,
+  input: ProductPatch,
+  now = new Date(),
+): ProductRow {
+  // An explicit undefined means "not changing": it must not override the stored value.
+  const patch = Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as ProductPatch;
+  return db.transaction((tx) => {
+    const current = getProduct(tx, id);
+    if (!current || current.deletedAt)
+      throw new RepoError('PRODUCT_NOT_FOUND', 'This item is gone');
+    const next: ProductRow = {
+      ...current,
+      ...patch,
+      name: patch.name !== undefined ? patch.name.trim() : current.name,
+      lowStockAt:
+        patch.lowStockAt !== undefined && patch.lowStockAt !== null
+          ? roundQty(patch.lowStockAt)
+          : (patch.lowStockAt ?? current.lowStockAt),
+    };
+    validate({ ...next, openingStock: 0 });
+    if (next.lowStockAt !== null && (next.lowStockAt < 0 || next.lowStockAt > MAX_QTY)) {
+      throw new RepoError('INVALID_QTY', 'Enter the stock level to warn at');
+    }
+    if (next.barcode !== null && next.barcode !== current.barcode) {
+      const other = findProductByBarcode(tx, next.barcode);
+      if (other && other.id !== id) {
+        throw new RepoError('BARCODE_EXISTS', 'An item with this barcode is already saved');
+      }
+    }
+    const changed = Object.fromEntries(
+      (Object.keys(patch) as (keyof ProductPatch)[])
+        .filter((key) => next[key] !== current[key])
+        .map((key) => [key, next[key]]),
+    );
+    if (Object.keys(changed).length === 0) return current;
+    const at = now.toISOString();
+    tx.update(products)
+      .set({ ...changed, updatedAt: at })
+      .where(eq(products.id, id))
+      .run();
+    enqueue(tx, 'products', 'update', { id, ...changed }, at);
+    return { ...next, updatedAt: at };
+  });
+}
+
+/**
+ * Removes a product from the catalog (soft delete: old bills keep their lines, and its barcode
+ * is free for a new item). Synced as an update that sets deletedAt.
+ */
+export function deleteProduct(db: Db, id: string, now = new Date()): void {
+  db.transaction((tx) => {
+    const current = getProduct(tx, id);
+    if (!current || current.deletedAt) return;
+    const at = now.toISOString();
+    tx.update(products).set({ deletedAt: at, updatedAt: at }).where(eq(products.id, id)).run();
+    enqueue(tx, 'products', 'update', { id, deletedAt: at }, at);
+  });
+}

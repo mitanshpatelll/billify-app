@@ -43,6 +43,9 @@ export default function ShopLayout() {
           options={{ presentation: 'modal', gestureEnabled: false }}
         />
         <Stack.Screen name="sync" />
+        <Stack.Screen name="stock/in" />
+        <Stack.Screen name="stock/low" />
+        <Stack.Screen name="products/[id]" />
         <Stack.Screen name="bill-qr" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="customer-picker" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="quick-add" options={{ ...sheet, sheetAllowedDetents: [0.92] }} />
