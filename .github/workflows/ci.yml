@@ -19,3 +19,5 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test --ci
+      # Known-vulnerable dependencies fail the build (exceptions listed in pnpm-workspace.yaml).
+      - run: pnpm audit --audit-level high

@@ -6,16 +6,21 @@ import {
   ReceiptText,
   RefreshCw,
   Store,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
+import { useRef, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { isApiError } from '@/api/client';
+import { deleteAccount } from '@/features/auth/delete-account';
 import { signOut, unsyncedChanges } from '@/features/auth/sign-out';
 import { useSession } from '@/features/auth/session-store';
 import { useShop } from '@/features/shop/shop';
 import { useSyncBadge } from '@/features/sync/sync';
 import {
+  ErrorBanner,
   Icon,
   LargeTitle,
   ListGroup,
@@ -48,10 +53,49 @@ export function MoreScreen() {
   const shop = useShop();
   const user = useSession((state) => state.user);
   const sync = useSyncBadge();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleting = useRef(false);
+
+  // Play Store and App Store both require deleting the account from inside the app.
+  function confirmDelete() {
+    Alert.alert(
+      'Delete your account?',
+      `${shop?.name ?? 'Your shop'} and everything in it (items, bills, stock, khata) are deleted from the server and from this phone. This can’t be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            if (deleting.current) return;
+            deleting.current = true;
+            setDeleteError(null);
+            deleteAccount().catch((err: unknown) => {
+              deleting.current = false;
+              setDeleteError(
+                isApiError(err, 'NETWORK_ERROR') || isApiError(err, 'TIMEOUT')
+                  ? 'No internet connection. Deleting the account needs the internet.'
+                  : isApiError(err) && err.status === 401
+                    ? 'Your session ended. Sign in again, then delete the account.'
+                    : 'Couldn’t delete the account. Try again in a minute.',
+              );
+            });
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <Screen kind="tab">
       <LargeTitle title="More" />
+      {deleteError ? (
+        <ErrorBanner
+          title="Account not deleted"
+          message={deleteError}
+          onDismiss={() => setDeleteError(null)}
+        />
+      ) : null}
 
       {shop ? (
         <Tile
@@ -106,6 +150,12 @@ export function MoreScreen() {
           subtitle={user?.email}
           leading={<Icon icon={LogOut} />}
           onPress={confirmSignOut}
+        />
+        <ListRow
+          title="Delete account"
+          subtitle="Deletes your shop from the server"
+          leading={<Icon icon={Trash2} color="error" />}
+          onPress={confirmDelete}
         />
       </ListGroup>
     </Screen>

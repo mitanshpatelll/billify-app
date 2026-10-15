@@ -16,3 +16,11 @@ minimumReleaseAgeExclude:
   - expo-router@57.0.26
 patchedDependencies:
   expo-constants@57.0.21: patches/expo-constants@57.0.21.patch
+# High advisories in build tools only, with no fixed version yet (checked 15 Oct 2026; check again
+# by 15 Nov 2026, or whenever expo / metro update, and remove each entry once a fix ships).
+# Neither ships in the app: node-forge is Expo CLI's update code signing, braces is Metro's file
+# watcher.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv
+    - GHSA-vfj7-8cjw-p6xm
