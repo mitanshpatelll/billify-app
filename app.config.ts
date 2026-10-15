@@ -58,6 +58,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-sqlite',
     // Session token in the Keychain / Keystore, left out of Android backups.
     'expo-secure-store',
+    // Barcode scanning only: no microphone, no recording.
+    [
+      'expo-camera',
+      {
+        cameraPermission:
+          'Billify uses the camera only to read product barcodes. Nothing is recorded or uploaded.',
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
     ...googleSignIn,
     [
       'expo-splash-screen',

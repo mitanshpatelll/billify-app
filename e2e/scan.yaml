@@ -1,0 +1,52 @@
+# Flow 2, scanning (User Flows): an unknown barcode opens quick add with the code filled in; the
+# same barcode scanned again adds one more instead of a second line; UPI checkout.
+# Scans come in as billify://shop/bill?scan=<code> (development builds; simulators have no camera).
+appId: com.glitchover.billify.dev
+---
+- runFlow: _new-shop.yaml
+
+# Without camera permission the scanner tile says so, and billing still works
+- assertVisible: 'Camera is off.*'
+
+# Unknown barcode → 11 Quick add with the barcode shown
+- runFlow:
+    file: _scan.yaml
+    env:
+      CODE: '8901058851298'
+- extendedWaitUntil:
+    visible: 'New item'
+    timeout: 10000
+- assertVisible: '8901058851298'
+- tapOn:
+    text: 'Item name'
+    index: 1
+- inputText: 'Maggi Masala 70 g'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '14'
+- tapOn:
+    text: 'MRP'
+    index: 1
+- inputText: '14'
+- tapOn: 'New item'
+- tapOn: 'Add to bill'
+- assertVisible: 'Maggi Masala 70 g'
+- assertVisible: 'Total ₹14.00'
+
+# Known barcode → straight into the cart: same line, quantity 2
+- runFlow:
+    file: _scan.yaml
+    env:
+      CODE: '8901058851298'
+- extendedWaitUntil:
+    visible: 'Total ₹28.00'
+    timeout: 10000
+- assertNotVisible: 'New item'
+- assertVisible: 'Cart · 1 item'
+
+# 02 Checkout with UPI (the QR carries the amount) → 03 Bill saved
+- tapOn: 'Checkout'
+- assertVisible: 'Scan with any UPI app'
+- tapOn: 'Mark as paid'
+- assertVisible: 'Bill saved'

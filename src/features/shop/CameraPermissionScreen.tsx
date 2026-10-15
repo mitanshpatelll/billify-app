@@ -1,5 +1,6 @@
+import { useCameraPermissions } from 'expo-camera';
 import { Camera, CircleCheck, Search, ShieldCheck, type LucideIcon } from 'lucide-react-native';
-import { Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { ScannerPreview } from '@/features/billing/components/ScannerPreview';
@@ -27,15 +28,30 @@ const POINTS: { icon: LucideIcon; title: string; subtitle: string }[] = [
 
 /** 10 Camera permission: last setup step. Allow → billing with the scanner; Not now → search only. */
 export function CameraPermissionScreen() {
-  // Finishing setup flips the shop route guard, which opens the tabs by itself.
-  // Billing slice: Allow calls Camera.requestCameraPermission() from vision-camera first,
-  // and "denied twice" shows an Open settings button (Linking.openSettings()).
+  const [permission, requestPermission] = useCameraPermissions();
+  const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
+
+  // Finishing setup flips the shop route guard, which opens the tabs by itself. Whatever the
+  // answer, billing opens: without the camera it works by search and quick keys.
+  async function allowCamera() {
+    try {
+      if (blocked) await Linking.openSettings();
+      else await requestPermission();
+    } finally {
+      finishSetup();
+    }
+  }
+
   return (
     <Screen
       header={<StackHeader right={<Badge label="Step 2 of 2" />} />}
       footer={
         <>
-          <Button label="Allow camera" icon={Camera} onPress={finishSetup} />
+          <Button
+            label={blocked ? 'Open settings' : 'Allow camera'}
+            icon={Camera}
+            onPress={() => void allowCamera()}
+          />
           <Pressable
             accessibilityRole="button"
             onPress={finishSetup}

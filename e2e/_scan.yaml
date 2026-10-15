@@ -1,0 +1,10 @@
+# One simulated scan of ${CODE} (development builds: billify://shop/bill?scan=<code>).
+appId: com.glitchover.billify.dev
+---
+- openLink: billify://shop/bill?scan=${CODE}
+# iOS asks before an app opens its own link.
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'

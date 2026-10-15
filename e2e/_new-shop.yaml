@@ -1,0 +1,34 @@
+# Signs a brand-new owner in (dev email sign-in) and sets up "Sharma Kirana", camera skipped.
+# Ends on 01 Billing with an empty catalog. Needs the API with DEV_SIGN_IN=true.
+appId: com.glitchover.billify.dev
+---
+- evalScript: ${output.email = 'e2e-' + Date.now() + '@billify.test'}
+- clearState
+- clearKeychain
+- runFlow: _open-app.yaml
+- tapOn: 'I run a shop.*'
+- tapOn: 'Continue'
+- tapOn:
+    text: 'Email.*'
+    index: 1 # the input; index 0 is its label
+- eraseText: 40
+- inputText: ${output.email}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'Set up your shop'
+    timeout: 30000
+- tapOn:
+    text: 'Shop name'
+    index: 1
+- inputText: 'Sharma Kirana'
+- tapOn:
+    text: 'UPI ID'
+    index: 1
+- inputText: 'sharmakirana@okaxis'
+- hideKeyboard
+- tapOn: 'Continue'
+- extendedWaitUntil:
+    visible: 'Not now'
+    timeout: 30000
+- tapOn: 'Not now'
+- assertVisible: 'Bill A-001'

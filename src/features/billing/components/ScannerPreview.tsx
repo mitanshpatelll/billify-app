@@ -1,4 +1,5 @@
-import { Flashlight, ScanBarcode } from 'lucide-react-native';
+import { Flashlight, FlashlightOff, ScanBarcode } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
@@ -7,19 +8,34 @@ import { Icon, IconButton, Text } from '@/ui';
 type ScannerPreviewProps = {
   hint?: string;
   showFlash?: boolean;
+  flashOn?: boolean;
+  onFlash?: () => void;
+  /** The camera is running (told to screen readers). */
+  live?: boolean;
+  /** The live camera, drawn behind the frame. */
+  camera?: ReactNode;
 };
 
 /**
  * The scanner tile: dark camera, haldi corner brackets and scan line, flash button, hint chip.
- * UI pass: no camera yet. The billing slice puts the vision-camera view behind this frame.
+ * Without `camera` it is the still picture used on 10 Camera permission.
  */
 export function ScannerPreview({
   hint = 'Point at a barcode',
   showFlash = true,
+  flashOn = false,
+  onFlash,
+  camera,
+  live = false,
 }: ScannerPreviewProps) {
   return (
-    <View style={styles.scanner} accessibilityLabel="Barcode scanner">
-      <View style={styles.frame}>
+    <View
+      style={styles.scanner}
+      accessible
+      accessibilityLabel={live ? 'Barcode scanner, camera on' : 'Barcode scanner'}
+    >
+      {camera}
+      <View style={styles.frame} pointerEvents="none">
         <View style={[styles.corner, styles.topLeft]} />
         <View style={[styles.corner, styles.topRight]} />
         <View style={[styles.corner, styles.bottomLeft]} />
@@ -28,10 +44,15 @@ export function ScannerPreview({
       </View>
       {showFlash ? (
         <View style={styles.flash}>
-          <IconButton icon={Flashlight} variant="camera" accessibilityLabel="Flash" />
+          <IconButton
+            icon={flashOn ? FlashlightOff : Flashlight}
+            variant="camera"
+            accessibilityLabel={flashOn ? 'Turn flash off' : 'Turn flash on'}
+            onPress={onFlash}
+          />
         </View>
       ) : null}
-      <View style={styles.hint}>
+      <View style={styles.hint} pointerEvents="none">
         <Icon icon={ScanBarcode} size={16} color="tertiary" />
         <Text variant="label" style={styles.hintText}>
           {hint}

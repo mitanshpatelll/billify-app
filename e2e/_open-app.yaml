@@ -3,6 +3,12 @@
 appId: com.glitchover.billify.dev
 ---
 - openLink: exp+billify://expo-development-client/?url=${METRO_URL || 'http://localhost:8081'}&disableOnboarding=1
+# iOS may ask before an app opens its own link (always after clearState).
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'
 - extendedWaitUntil:
     visible: 'How will you use Billify\?|Set up your shop|Bill [A-Z]+-\d+|Runtime version.*'
     timeout: 90000

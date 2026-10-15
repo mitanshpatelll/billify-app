@@ -1,10 +1,18 @@
-import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, PackagePlus, Plus, ScanBarcode, Search } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Pressable, ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { useProductSearch, useQuickKeys, type Product } from '@/features/catalog/catalog';
+import { env } from '@/config/env';
+import { animateNextLayout } from '@/lib/motion';
+import {
+  findProductByBarcode,
+  useProductSearch,
+  useQuickKeys,
+  type Product,
+} from '@/features/catalog/catalog';
 import { useShop } from '@/features/shop/shop';
 import { useSyncBadge } from '@/features/sync/sync';
 import { formatRupees } from '@/lib/money';
@@ -27,7 +35,8 @@ import {
 
 import { useNextBillNumber } from './bills';
 import { cartTotalPaise, lineTotalPaise, useCart } from './cart-store';
-import { ScannerPreview } from './components/ScannerPreview';
+import { BarcodeScanner } from './components/BarcodeScanner';
+import { isStorableBarcode } from './scan-gate';
 
 /** 01 Billing: scan / search / quick keys → cart → checkout. Never waits for the network. */
 export function BillingScreen() {
@@ -38,13 +47,51 @@ export function BillingScreen() {
   const [query, setQuery] = useState('');
   const results = useProductSearch(query);
   const sync = useSyncBadge();
+  const focused = useIsFocused();
+  // Scans only count while billing is on screen (not under quick add or checkout).
+  const focusedRef = useRef(focused);
+  useEffect(() => {
+    focusedRef.current = focused;
+  }, [focused]);
+  const params = useLocalSearchParams<{ scan?: string }>();
 
   const total = cartTotalPaise(lines);
 
   function addProduct(product: Product) {
+    animateNextLayout();
     add(product);
     setQuery('');
   }
+
+  // A known barcode goes straight into the cart (haptic + slide-in); an unknown one opens
+  // quick add with the barcode filled in, so the catalog builds itself while billing.
+  const handleScan = useCallback(
+    (code: string) => {
+      if (!focusedRef.current) return;
+      if (!isStorableBarcode(code)) return; // e.g. a QR code with a link: not a product
+      const product = findProductByBarcode(code);
+      if (product) {
+        animateNextLayout();
+        add(product);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        AccessibilityInfo.announceForAccessibility(`${product.name} added`);
+      } else {
+        focusedRef.current = false; // until billing is back on screen: one sheet per scan
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        AccessibilityInfo.announceForAccessibility('New barcode. Add the item.');
+        router.push({ pathname: '/shop/quick-add', params: { barcode: code } });
+      }
+    },
+    [add],
+  );
+
+  // Development builds: billify://shop/bill?scan=<code> counts as a scan. Simulators have no
+  // camera, and the Maestro flows scan this way.
+  useEffect(() => {
+    if (!env.devSignIn || !params.scan) return;
+    router.setParams({ scan: undefined });
+    handleScan(params.scan);
+  }, [params.scan, handleScan]);
 
   return (
     <Screen
@@ -85,7 +132,7 @@ export function BillingScreen() {
         <StatusPill label={sync.label} tone={sync.tone} onPress={() => router.push('/shop/sync')} />
       </View>
 
-      <ScannerPreview />
+      <BarcodeScanner onScan={handleScan} active={focused} />
 
       <TextField
         icon={Search}
