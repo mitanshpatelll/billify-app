@@ -10,16 +10,25 @@ export function getShop(db: Db): ShopRow | undefined {
   return db.select().from(shop).limit(1).get();
 }
 
-/** Saves (or updates) the shop's details. Keeps whether setup was finished. */
-export function saveShop(db: Db, details: ShopDetails): void {
+/**
+ * Saves (or updates) the shop's details. Setup stays finished once it is; `setupDone` finishes
+ * it now (a shop restored from the server skips the setup screens).
+ */
+export function saveShop(db: Db, details: ShopDetails, setupDone = false): void {
   db.transaction((tx) => {
     const current = getShop(tx);
     if (current && current.id !== details.id) tx.delete(shop).run();
+    const done = setupDone || (current?.id === details.id && current.setupDone);
     tx.insert(shop)
-      .values({ ...details, setupDone: false })
+      .values({ ...details, setupDone: done })
       .onConflictDoUpdate({
         target: shop.id,
-        set: { name: details.name, upiId: details.upiId, billPrefix: details.billPrefix },
+        set: {
+          name: details.name,
+          upiId: details.upiId,
+          billPrefix: details.billPrefix,
+          setupDone: done,
+        },
       })
       .run();
   });

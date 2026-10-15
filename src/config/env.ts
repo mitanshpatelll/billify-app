@@ -12,9 +12,19 @@ if (!apiUrl || !webUrl) {
   );
 }
 
+const variant = (Constants.expoConfig?.extra?.variant ?? 'development') as
+  'development' | 'preview' | 'production';
+
 export const env = {
   apiUrl,
   webUrl,
-  variant: (Constants.expoConfig?.extra?.variant ?? 'development') as
-    'development' | 'preview' | 'production',
+  variant,
+  /** Google OAuth client ids (public). Empty = Google sign-in is off in this build. */
+  googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
+  googleIosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
+  /**
+   * Development builds (JS dev mode + development variant) offer email sign-in against an API
+   * started with DEV_SIGN_IN=true. Release builds never show it, whatever the variant.
+   */
+  devSignIn: __DEV__ && variant === 'development',
 } as const;

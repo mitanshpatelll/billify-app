@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 
-import { ApiError } from './client';
+import { ApiError, onSessionEnded } from './client';
 
 // Customer-side screens are online-only and cached by TanStack Query (Architecture: data flow).
 export const queryClient = new QueryClient({
@@ -15,3 +15,6 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// A 401 ends the session: drop everything cached for it.
+onSessionEnded(() => queryClient.clear());

@@ -15,12 +15,12 @@ import { Platform } from 'react-native';
 
 import { queryClient } from '@/api/query-client';
 import { useDatabaseReady } from '@/db/use-database-ready';
-import { useSession } from '@/features/auth/session-store';
+import { selectSignedIn, useSession } from '@/features/auth/session-store';
 import { colors } from '@/theme/tokens';
 import { EmptyState, Screen } from '@/ui';
 
-// Keep the native splash up until Manrope is ready and the SQLite migrations have run
-// (the auth slice adds the saved session).
+// Keep the native splash up until Manrope is ready and the SQLite migrations have run.
+// The saved session comes from SecureStore synchronously, so the first screen is already right.
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -31,7 +31,7 @@ export default function RootLayout() {
     Manrope_700Bold,
   });
   const database = useDatabaseReady();
-  const signedIn = useSession((state) => state.signedIn);
+  const signedIn = useSession(selectSignedIn);
   const role = useSession((state) => state.role);
   const ready = (fontsLoaded || !!fontError) && (database.done || !!database.error);
 

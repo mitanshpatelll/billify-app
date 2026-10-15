@@ -1,12 +1,10 @@
 import { LogOut, ReceiptText } from 'lucide-react-native';
 
-import { useSession } from '@/features/auth/session-store';
+import { signOut } from '@/features/auth/sign-out';
 import { EmptyState, Icon, LargeTitle, ListGroup, ListRow, Screen } from '@/ui';
 
 /** 22 My bills (M2), empty state: bills appear after "Save to Billify" on a bill link. */
 export function MyBillsScreen() {
-  const signOut = useSession((state) => state.signOut);
-
   return (
     <Screen>
       <LargeTitle title="My bills" />

@@ -1,8 +1,9 @@
 import { db } from '@/db/client';
 import { useDbQuery } from '@/db/live';
-import { shopRepo } from '@/db/repos';
+import { adoptShop, clearLocalData, shopRepo } from '@/db/repos';
 import type { ShopRow } from '@/db/schema';
-import { newId } from '@/lib/ids';
+
+import type { ServerShop } from './shop-api';
 
 export type Shop = ShopRow;
 
@@ -11,13 +12,23 @@ export function useShop(): Shop | null {
   return useDbQuery(['shop'], () => shopRepo.getShop(db) ?? null);
 }
 
+/** Keeps the server's shop on the phone (clearing another shop's data if one was here). */
+export function storeShop(server: ServerShop, { setupDone }: { setupDone: boolean }): void {
+  adoptShop(
+    db,
+    { id: server.id, name: server.name, upiId: server.upiId, billPrefix: server.billPrefix },
+    setupDone,
+  );
+}
+
 /**
- * Saves the setup form on the phone. The auth slice sends it to POST /v1/shops first and
- * stores the shop with the server's id instead of this local one.
+ * Right after a shop owner signs in, before any shop screen shows: the phone's copy must be this
+ * owner's. Their server shop is kept (another shop's data is cleared first); an owner with no
+ * shop yet starts from an empty phone.
  */
-export function saveShopDetails(details: Pick<Shop, 'name' | 'upiId' | 'billPrefix'>): void {
-  const current = shopRepo.getShop(db);
-  shopRepo.saveShop(db, { id: current?.id ?? newId(), ...details });
+export function prepareShopForOwner(server: ServerShop | null): void {
+  if (server) storeShop(server, { setupDone: true });
+  else if (shopRepo.getShop(db)) clearLocalData(db);
 }
 
 /** Last setup step done: flips the shop route guard, which opens the tabs by itself. */

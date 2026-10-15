@@ -1,26 +1,41 @@
-# Flow 1 + 2 (User Flows): a new shop sets up, adds an unknown item while billing, takes cash,
-# and the bill survives an app restart (local SQLite). Run: pnpm e2e e2e/first-bill.yaml
+# Flows 1 + 2 (User Flows): a new shop signs in and sets up, adds an unknown item while billing,
+# takes cash; the session and the bill survive an app restart; signing out and back in restores
+# the shop from the server. Needs the API with DEV_SIGN_IN=true (no Google in development).
+# Run: METRO_URL=http://localhost:8081 pnpm e2e e2e/first-bill.yaml
 appId: com.glitchover.billify.dev
 ---
+- evalScript: ${output.email = 'e2e-' + Date.now() + '@billify.test'}
 - clearState
+- clearKeychain
 - runFlow: _open-app.yaml
 
-# 07 Welcome → 08 Sign in (memory-only until the auth slice)
+# 07 Welcome → 08 Sign in
 - tapOn: 'I run a shop.*'
 - tapOn: 'Continue'
-- tapOn: 'Continue with Google'
+- tapOn:
+    text: 'Email.*'
+    index: 1 # the input; index 0 is its label
+- eraseText: 40
+- inputText: ${output.email}
+- pressKey: Enter # Return signs in (the keyboard covers the button)
 
-# 09 Shop setup → 10 Camera
+# 09 Shop setup (a new owner: GET /v1/shops/me → 404) → 10 Camera
+- extendedWaitUntil:
+    visible: 'Set up your shop'
+    timeout: 30000
 - tapOn:
     text: 'Shop name'
-    index: 1 # the input; index 0 is its label
+    index: 1
 - inputText: 'Sharma Kirana'
 - tapOn:
     text: 'UPI ID'
-    index: 1 # the input; index 0 is its label
+    index: 1
 - inputText: 'sharmakirana@okaxis'
 - hideKeyboard
 - tapOn: 'Continue'
+- extendedWaitUntil:
+    visible: 'Not now'
+    timeout: 30000
 - tapOn: 'Not now'
 
 # 01 Billing: empty catalog, so the first search is a miss → 11 Quick add
@@ -31,12 +46,12 @@ appId: com.glitchover.billify.dev
 - tapOn: 'No item called "Sugar".*'
 - tapOn:
     text: 'Selling price'
-    index: 1 # the input; index 0 is its label
+    index: 1
 - inputText: '44'
 - tapOn: 'kg'
 - tapOn:
     text: 'In stock now \(kg\)'
-    index: 1 # the input; index 0 is its label
+    index: 1
 - inputText: '25'
 - tapOn: 'New item' # closes the keyboard (hideKeyboard can't inside a form sheet)
 - tapOn: 'Add to bill'
@@ -52,15 +67,29 @@ appId: com.glitchover.billify.dev
 - tapOn: 'Start a new bill'
 - assertVisible: 'Bill A-002'
 
-# Sugar is now a quick key (loose item, sold once)
-- assertVisible: 'Sugar \(loose\)|Sugar'
-
-# Restart: the shop, catalog and bill counter come back from SQLite
+# Restart: still signed in (SecureStore), shop + catalog + bill counter from SQLite
 - stopApp
 - runFlow: _open-app.yaml
-- tapOn: 'Continue'
-- tapOn: 'Continue with Google'
 - assertVisible: 'Bill A-002'
 - tapOn: 'Search items'
 - inputText: 'sug'
 - assertVisible: 'Sugar.*₹44.00 / kg'
+- pressKey: Enter # closes the keyboard, which hides the tab bar
+
+# 16 More → sign out (warns: the bill hasn't synced yet) → sign in again → shop restored
+- tapOn: 'More, tab.*'
+- tapOn: 'Sign out.*'
+- assertVisible: '.*haven’t reached the server yet.*|.*hasn’t reached the server yet.*'
+- tapOn: 'Sign out'
+- tapOn: 'I run a shop.*'
+- tapOn: 'Continue'
+- tapOn:
+    text: 'Email.*'
+    index: 1
+- eraseText: 40
+- inputText: ${output.email}
+- pressKey: Enter # Return signs in (the keyboard covers the button)
+- extendedWaitUntil:
+    visible: 'Sharma Kirana'
+    timeout: 30000
+- assertVisible: 'Bill A-001' # the unsynced bill went with sign-out; sync brings bills back

@@ -1,18 +1,52 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Hash, QrCode, Store, Wifi } from 'lucide-react-native';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { isApiError } from '@/api/client';
+import { useSession } from '@/features/auth/session-store';
 import { BILL_PREFIX_PATTERN, formatBillNumber } from '@/lib/bill-number';
 import { UPI_ID_PATTERN } from '@/lib/upi';
-import { Badge, Button, Icon, LargeTitle, Screen, StackHeader, Text, TextField, Tile } from '@/ui';
+import { colors } from '@/theme/tokens';
+import {
+  Badge,
+  Button,
+  ErrorBanner,
+  Icon,
+  LargeTitle,
+  Screen,
+  StackHeader,
+  Text,
+  TextField,
+  Tile,
+} from '@/ui';
 
-import { saveShopDetails, useShop } from './shop';
+import { storeShop, useShop } from './shop';
+import { createMyShop, fetchMyShop } from './shop-api';
+
+function setupError(error: unknown): string {
+  if (isApiError(error, 'NETWORK_ERROR') || isApiError(error, 'TIMEOUT')) {
+    return 'No internet connection. Setting up the shop needs the internet once.';
+  }
+  if (isApiError(error, 'VALIDATION_FAILED')) return error.message;
+  return 'Couldn’t save the shop. Try again in a minute.';
+}
 
 /** 09 Shop setup: shop name, UPI id, bill prefix. The only step that needs the internet. */
 export function ShopSetupScreen() {
+  const userId = useSession((state) => state.user?.id);
   const saved = useShop();
+  // A shop that already exists on the server (new phone, reinstall) skips setup entirely.
+  const existing = useQuery({
+    queryKey: ['shops', 'me', userId],
+    queryFn: () => fetchMyShop(),
+    retry: 1,
+    staleTime: 0,
+  });
+  const create = useMutation({ mutationFn: createMyShop });
+
   const [name, setName] = useState(saved?.name ?? '');
   const [upiId, setUpiId] = useState(saved?.upiId ?? '');
   const [prefix, setPrefix] = useState(saved?.billPrefix ?? 'A');
@@ -24,20 +58,57 @@ export function ShopSetupScreen() {
   const valid = nameOk && upiOk && prefixOk;
   const sampleNumber = formatBillNumber(prefixOk ? prefix : 'A', 1);
 
+  useEffect(() => {
+    // Storing it with setup done flips the shop route guard: the tabs open by themselves.
+    // The sync slice pulls the shop's products, bills and khata after this.
+    if (existing.data) storeShop(existing.data, { setupDone: true });
+  }, [existing.data]);
+
   function next() {
     setTouched(true);
-    if (!valid) return;
-    // Auth slice: POST /v1/shops (201, or 409 SHOP_EXISTS → load it), then the first sync pull.
-    saveShopDetails({ name: name.trim(), upiId: upiId.trim().toLowerCase(), billPrefix: prefix });
-    router.push('/shop/setup/camera');
+    if (!valid || create.isPending) return;
+    create.mutate(
+      { name: name.trim(), upiId: upiId.trim().toLowerCase(), billPrefix: prefix },
+      {
+        onSuccess: (shop) => {
+          storeShop(shop, { setupDone: false });
+          router.push('/shop/setup/camera');
+        },
+      },
+    );
   }
+
+  if (existing.isPending || existing.data) {
+    return (
+      <Screen>
+        <View style={styles.checking}>
+          <ActivityIndicator color={colors.primary} />
+          <Text variant="body" tone="muted">
+            Checking for your shop…
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const offline = existing.isError ? setupError(existing.error) : null;
 
   return (
     <Screen
-      header={<StackHeader right={<Badge label="Step 1 of 2" />} />}
-      footer={<Button label="Continue" onPress={next} />}
+      header={<StackHeader action="none" right={<Badge label="Step 1 of 2" />} />}
+      footer={<Button label="Continue" loading={create.isPending} onPress={next} />}
     >
       <LargeTitle title="Set up your shop" subtitle="This goes on every bill you share." />
+
+      {create.isError ? (
+        <ErrorBanner
+          title="Shop not saved"
+          message={setupError(create.error)}
+          onDismiss={() => create.reset()}
+        />
+      ) : offline ? (
+        <ErrorBanner title="Couldn't check for your shop" message={offline} />
+      ) : null}
 
       <Tile>
         <View style={styles.form}>
@@ -132,4 +203,11 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.space.xxs,
   },
   flex: { flex: 1 },
+  checking: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.space.sm,
+    paddingVertical: theme.space.xxl,
+  },
 }));
