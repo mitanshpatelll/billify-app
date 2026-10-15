@@ -16,7 +16,7 @@ import {
 import { useShop } from '@/features/shop/shop';
 import { useSyncBadge } from '@/features/sync/sync';
 import { formatRupees } from '@/lib/money';
-import { formatQty, perUnit } from '@/lib/units';
+import { formatQty, isLoose, perUnit } from '@/lib/units';
 import {
   Button,
   Chip,
@@ -28,6 +28,7 @@ import {
   Screen,
   SectionHeader,
   StatusPill,
+  SwipeToRemove,
   Text,
   TextField,
   Tile,
@@ -43,7 +44,7 @@ export function BillingScreen() {
   const shop = useShop();
   const billNumber = useNextBillNumber(shop?.billPrefix ?? 'A');
   const quickKeys = useQuickKeys();
-  const { lines, lastAddedId, add, increment, decrement, clear } = useCart();
+  const { lines, lastAddedId, add, increment, decrement, remove, clear } = useCart();
   const [query, setQuery] = useState('');
   const results = useProductSearch(query);
   const sync = useSyncBadge();
@@ -64,10 +65,15 @@ export function BillingScreen() {
 
   const total = cartTotalPaise(lines);
 
+  // Loose items ask how much (a weight preset, a typed kg, or "₹20 worth"); packets go in as 1.
   function addProduct(product: Product) {
+    setQuery('');
+    if (isLoose(product.unit)) {
+      router.push({ pathname: '/shop/qty', params: { product: product.id } });
+      return;
+    }
     animateNextLayout();
     add(product);
-    setQuery('');
   }
 
   // A known barcode goes straight into the cart (haptic + slide-in); an unknown one opens
@@ -204,31 +210,40 @@ export function BillingScreen() {
       {lines.length ? (
         <ListGroup>
           {lines.map((line) => (
-            <View
+            <SwipeToRemove
               key={line.productId}
-              style={[styles.line, line.productId === lastAddedId && styles.lineNew]}
+              label={line.name}
+              onRemove={() => {
+                animateNextLayout();
+                remove(line.productId);
+              }}
             >
-              <View style={styles.lineText}>
-                <Text variant="bodyStrong" numberOfLines={1}>
-                  {line.name}
-                </Text>
-                <Text variant="bodySecondary" tone="muted">
-                  {formatRupees(line.unitPricePaise)} {perUnit(line.unit)}
-                </Text>
+              <View style={[styles.line, line.productId === lastAddedId && styles.lineNew]}>
+                <View style={styles.lineText}>
+                  <Text variant="bodyStrong" numberOfLines={1}>
+                    {line.name}
+                  </Text>
+                  <Text variant="bodySecondary" tone="muted">
+                    {formatRupees(line.unitPricePaise)} {perUnit(line.unit)}
+                  </Text>
+                </View>
+                <QtyStepper
+                  value={formatQty(line.qty, line.unit)}
+                  itemLabel={line.name}
+                  onIncrement={() => increment(line.productId)}
+                  onDecrement={() => decrement(line.productId)}
+                  onPressValue={() =>
+                    router.push({ pathname: '/shop/qty', params: { edit: line.productId } })
+                  }
+                />
+                <Money
+                  paise={lineTotalPaise(line)}
+                  variant="bodyStrong"
+                  align="right"
+                  style={styles.lineTotal}
+                />
               </View>
-              <QtyStepper
-                value={formatQty(line.qty, line.unit)}
-                itemLabel={line.name}
-                onIncrement={() => increment(line.productId)}
-                onDecrement={() => decrement(line.productId)}
-              />
-              <Money
-                paise={lineTotalPaise(line)}
-                variant="bodyStrong"
-                align="right"
-                style={styles.lineTotal}
-              />
-            </View>
+            </SwipeToRemove>
           ))}
         </ListGroup>
       ) : (

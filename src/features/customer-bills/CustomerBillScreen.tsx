@@ -123,6 +123,7 @@ export function CustomerBillScreen() {
       <BillItemsTile
         items={bill.items}
         totalPaise={bill.totalPaise}
+        discountPaise={bill.discountPaise}
         payments={bill.payments}
         voided={bill.status === 'void'}
       />

@@ -21,7 +21,23 @@ it('stores a typed mobile number as 10 digits and queues the customer', () => {
     createdAt: customer.createdAt,
     name: 'Ramesh Yadav',
     phone: '9876504521',
+    khataLimitPaise: null,
   });
+});
+
+it('sets and clears a khata limit; refuses a bad one', () => {
+  const c = customersRepo.createCustomer(db, { name: 'Ramesh Yadav', phone: null });
+  db.delete(outbox).run();
+  expect(customersRepo.updateCustomer(db, c.id, { khataLimitPaise: 200000 }).khataLimitPaise).toBe(
+    200000,
+  );
+  expect(db.select().from(outbox).all()[0]?.data).toEqual({ id: c.id, khataLimitPaise: 200000 });
+  expect(
+    customersRepo.updateCustomer(db, c.id, { khataLimitPaise: null }).khataLimitPaise,
+  ).toBeNull();
+  expect(() => customersRepo.updateCustomer(db, c.id, { khataLimitPaise: -5 })).toThrow(
+    expect.objectContaining({ code: 'INVALID_LIMIT' }),
+  );
 });
 
 it('accepts no phone, refuses a wrong one', () => {

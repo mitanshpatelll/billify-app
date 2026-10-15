@@ -48,6 +48,9 @@ export function recordPayment(
 }
 
 /** Throws RepoError. */
-export function updateCustomer(id: string, input: { name?: string; phone?: string | null }): void {
+export function updateCustomer(
+  id: string,
+  input: { name?: string; phone?: string | null; khataLimitPaise?: number | null },
+): void {
   customersRepo.updateCustomer(db, id, input);
 }

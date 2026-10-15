@@ -162,6 +162,16 @@ export function BillDetailScreen() {
           ))}
         </View>
         <View style={styles.dashed} />
+        {bill.discountPaise > 0 ? (
+          <View style={styles.item}>
+            <Text variant="bodySecondary" tone="muted" style={styles.flex}>
+              Discount on {formatRupees(bill.totalPaise + bill.discountPaise)}
+            </Text>
+            <Text variant="bodySecondary" tone="muted">
+              −{formatRupees(bill.discountPaise)}
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.totalRow}>
           <Text variant="titleScreen">Total</Text>
           <Money

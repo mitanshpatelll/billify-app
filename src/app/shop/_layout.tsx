@@ -56,6 +56,7 @@ export default function ShopLayout() {
         <Stack.Screen name="bill-qr" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="customer-picker" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="quick-add" options={{ ...sheet, sheetAllowedDetents: [0.92] }} />
+        <Stack.Screen name="qty" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
       </Stack.Protected>
     </Stack>
   );

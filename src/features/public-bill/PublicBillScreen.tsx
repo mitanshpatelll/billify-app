@@ -152,6 +152,7 @@ function BillView({ bill: { shop, bill }, token }: { bill: PublicBill; token: st
       <BillItemsTile
         items={bill.items}
         totalPaise={bill.totalPaise}
+        discountPaise={bill.discountPaise}
         payments={bill.payments}
         voided={bill.voided}
       />

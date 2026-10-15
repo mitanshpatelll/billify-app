@@ -61,6 +61,8 @@ export type NewBill = {
   customerId: string | null;
   /** In bill order (first line first). */
   lines: BillLine[];
+  /** Discount and round-off off the lines' sum (paise, 0 or more). */
+  discountPaise?: number;
   payments: NewPayment[];
 };
 
@@ -77,7 +79,7 @@ export function nextBillNumber(db: Db, prefix: string): string {
   return formatBillNumber(prefix, (row?.max ?? 0) + 1);
 }
 
-function validate(input: NewBill): number {
+function validate(input: NewBill): { total: number; discount: number } {
   if (input.lines.length === 0) throw new RepoError('EMPTY_BILL', 'Add an item first');
   for (const line of input.lines) {
     // Checked as stored: a qty that rounds to 0 would be refused by the server (qty > 0).
@@ -86,10 +88,15 @@ function validate(input: NewBill): number {
       throw new RepoError('INVALID_QTY', `Check the quantity of ${line.name}`);
     }
   }
-  const total = input.lines.reduce(
+  const subtotal = input.lines.reduce(
     (sum, line) => sum + lineTotalPaise(roundQty(line.qty), line.unitPricePaise),
     0,
   );
+  const discount = input.discountPaise ?? 0;
+  if (!Number.isInteger(discount) || discount < 0 || discount >= subtotal) {
+    throw new RepoError('INVALID_DISCOUNT', 'The discount must be less than the bill');
+  }
+  const total = subtotal - discount;
   if (total < 1 || total > MAX_PAISE) throw new RepoError('INVALID_TOTAL', 'Check the bill total');
   const paid = input.payments.reduce((sum, payment) => sum + payment.amountPaise, 0);
   if (input.payments.some((payment) => payment.amountPaise < 1) || paid !== total) {
@@ -98,7 +105,7 @@ function validate(input: NewBill): number {
   if (input.payments.some((payment) => payment.method === 'khata') && !input.customerId) {
     throw new RepoError('KHATA_NEEDS_CUSTOMER', 'Pick a customer to add this bill to khata');
   }
-  return total;
+  return { total, discount };
 }
 
 /**
@@ -107,7 +114,7 @@ function validate(input: NewBill): number {
  * outbox entry for every row, parents first. It never waits for the network.
  */
 export function saveBill(db: Db, input: NewBill, now = new Date()): BillRow {
-  const total = validate(input);
+  const { total, discount } = validate(input);
   return db.transaction((tx) => {
     if (input.id) {
       const saved = tx.select().from(bills).where(eq(bills.id, input.id)).get();
@@ -126,6 +133,7 @@ export function saveBill(db: Db, input: NewBill, now = new Date()): BillRow {
       customerId: input.customerId,
       number: nextBillNumber(tx, input.billPrefix),
       totalPaise: total,
+      discountPaise: discount,
       publicToken: newPublicToken(),
       voidedAt: null,
     };

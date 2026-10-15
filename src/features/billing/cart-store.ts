@@ -18,17 +18,26 @@ export type CartLine = {
   unitPricePaise: number;
 };
 
+/** Off the bill at checkout: none, round down to the rupee, or a fixed amount (User Flows §2). */
+export type CartDiscount =
+  { kind: 'none' } | { kind: 'roundoff' } | { kind: 'amount'; paise: number };
+
 type CartState = {
   /** Becomes the bill id, so a draft can only ever turn into one bill. New after every clear. */
   draftId: string;
   /** Newest first. */
   lines: CartLine[];
   customerId: string | null;
+  discount: CartDiscount;
   /** The line to highlight as just added. */
   lastAddedId: string | null;
   add: (product: Pick<Product, 'id' | 'name' | 'unit' | 'pricePaise'>, qty?: number) => void;
   increment: (productId: string) => void;
   decrement: (productId: string) => void;
+  /** Exact quantity (typed, or a weight preset); 0 removes the line. */
+  setQty: (productId: string, qty: number) => void;
+  remove: (productId: string) => void;
+  setDiscount: (discount: CartDiscount) => void;
   setCustomer: (customerId: string | null) => void;
   clear: () => void;
 };
@@ -41,6 +50,7 @@ export const useCart = create<CartState>()(
       draftId: newId(),
       lines: [],
       customerId: null,
+      discount: { kind: 'none' },
       lastAddedId: null,
       add: (product, qty) =>
         set((state) => {
@@ -77,8 +87,24 @@ export const useCart = create<CartState>()(
             )
             .filter((line) => line.qty > 0),
         })),
+      setQty: (productId, qty) =>
+        set((state) => ({
+          lines: state.lines
+            .map((line) => (line.productId === productId ? { ...line, qty } : line))
+            .filter((line) => line.qty > 0),
+        })),
+      remove: (productId) =>
+        set((state) => ({ lines: state.lines.filter((line) => line.productId !== productId) })),
+      setDiscount: (discount) => set({ discount }),
       setCustomer: (customerId) => set({ customerId }),
-      clear: () => set({ draftId: newId(), lines: [], customerId: null, lastAddedId: null }),
+      clear: () =>
+        set({
+          draftId: newId(),
+          lines: [],
+          customerId: null,
+          discount: { kind: 'none' },
+          lastAddedId: null,
+        }),
     }),
     {
       name: 'cart-draft',
@@ -87,6 +113,7 @@ export const useCart = create<CartState>()(
         draftId: state.draftId,
         lines: state.lines,
         customerId: state.customerId,
+        discount: state.discount,
       }),
     },
   ),
@@ -98,6 +125,17 @@ export function lineTotalPaise(line: CartLine): number {
 
 export function cartTotalPaise(lines: CartLine[]): number {
   return lines.reduce((sum, line) => sum + lineTotalPaise(line), 0);
+}
+
+/**
+ * The discount in paise for these lines. Round-off takes the paise off (₹202.40 → ₹202.00); a
+ * fixed amount is used as is (checkout checks it stays below the bill).
+ */
+export function discountPaise(lines: CartLine[], discount: CartDiscount | undefined): number {
+  if (!discount || discount.kind === 'none') return 0;
+  if (discount.kind === 'amount') return discount.paise;
+  const subtotal = cartTotalPaise(lines);
+  return subtotal >= 100 ? subtotal % 100 : 0;
 }
 
 /** Cart lines in bill order (first scanned first; the cart shows the newest on top). */

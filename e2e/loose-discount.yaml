@@ -1,0 +1,112 @@
+# User Flows §2 review step and D27: a loose item by weight preset and by "₹20 worth", swipe a
+# line away, round-off at checkout; a split bill with khata over the customer's khata limit
+# (a warning, never a block).
+appId: com.glitchover.billify.dev
+---
+- runFlow: _new-shop.yaml
+
+# Sugar, loose by kg (quick add puts 1 kg in the cart)
+- tapOn: 'Search items'
+- inputText: 'Sugar'
+- tapOn: 'No item called "Sugar".*'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '44'
+- tapOn: 'New item'
+- tapOn: 'kg'
+- tapOn: 'Add to bill'
+- assertVisible: 'Quantity 1 kg'
+
+# Tap the quantity: a weight preset
+- tapOn: 'Quantity 1 kg'
+- tapOn: '0.5 kg'
+- assertVisible: 'Quantity 0.5 kg'
+
+# Search it again: "₹20 worth" adds 0.455 kg
+- tapOn: 'Search items'
+- inputText: 'Sugar'
+- tapOn: 'Sugar, ₹44.00 / kg'
+- tapOn: 'By amount \(₹\)'
+- inputText: '20'
+- tapOn: 'Add to bill'
+- assertVisible: 'Quantity 0.955 kg'
+
+# A packet, then swiped away
+- tapOn: 'Search items'
+- inputText: 'Maggi'
+- tapOn: 'No item called "Maggi".*'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '14'
+- tapOn: 'New item'
+- tapOn: 'Add to bill'
+- assertVisible: 'Quantity 1'
+- swipe:
+    from:
+      text: '₹14.00' # the line total, at the right: a long swipe left
+    direction: LEFT
+- assertNotVisible: 'Maggi'
+- assertVisible: 'Total ₹42.02'
+
+# Checkout: round off the 2 paise, cash
+- tapOn: 'Checkout'
+- tapOn: 'Round off −₹0.02'
+- assertVisible: '₹42.02 − ₹0.02 round-off'
+- tapOn: 'Cash, Collect at counter'
+- tapOn: 'Mark as paid'
+- tapOn: 'Start a new bill'
+
+# Bill 2: 2 kg from the quick key, on a new customer's khata
+- tapOn: 'Sugar \(loose\)|Sugar'
+- tapOn: '2 kg'
+- tapOn: 'Checkout'
+- tapOn: 'Pick customer'
+- tapOn: 'New customer.*'
+- inputText: 'Ramesh Yadav'
+- tapOn: 'Save customer'
+- tapOn: 'Khata, Add to due'
+- tapOn: 'Add to khata'
+- tapOn: 'Start a new bill'
+
+# A khata limit of ₹50 on Ramesh
+- tapOn: 'Khata, tab.*'
+- tapOn: 'Ramesh Yadav.*'
+- tapOn: 'Edit customer'
+- tapOn:
+    text: 'Khata limit \(optional\)'
+    index: 1
+- inputText: '50'
+- tapOn: 'Save customer'
+- assertVisible: '.*limit ₹50.*'
+- tapOn: 'Back'
+- tapOn: 'Bill, tab.*'
+
+# Bill 3: split 1 kg: ₹20 cash + ₹24 on khata → over the limit, saved anyway
+- tapOn: 'Sugar \(loose\)|Sugar'
+- tapOn: '1 kg'
+- tapOn: 'Checkout'
+- tapOn: 'Pick customer'
+- tapOn: 'Ramesh Yadav.*'
+- tapOn: 'Split, Cash, UPI, khata'
+- tapOn:
+    text: 'Cash received'
+    index: 1
+- inputText: '20'
+- tapOn:
+    text: 'On khata'
+    index: 1
+- inputText: '24'
+- tapOn: 'Payment method'
+- assertVisible: 'Rest by UPI: ₹0.00'
+- assertVisible: 'Over Ramesh Yadav’s khata limit of ₹50.00 by ₹62.00. You can still add it.'
+- tapOn: 'Mark as paid'
+- tapOn: 'Start a new bill'
+
+# 18 Bill detail shows the round-off on A-001
+- tapOn: 'More, tab.*'
+- tapOn: 'Bills, History and search'
+- tapOn: 'A-001.*'
+- assertVisible: 'Discount on ₹42.02'
+- assertVisible: '−₹0.02'

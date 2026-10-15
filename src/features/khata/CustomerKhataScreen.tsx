@@ -206,6 +206,9 @@ export function CustomerKhataScreen() {
           {entries.length
             ? `since ${dayFormat.format(new Date(since!))} · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`
             : 'Nothing on khata yet'}
+          {customer.khataLimitPaise !== null
+            ? ` · limit ${formatRupees(customer.khataLimitPaise, { showPaise: false })}`
+            : ''}
         </Text>
       </Tile>
 
@@ -223,6 +226,7 @@ export function CustomerKhataScreen() {
         <EditCustomerForm
           name={customer.name}
           phone={customer.phone}
+          khataLimitPaise={customer.khataLimitPaise}
           onCancel={() => setMode('view')}
           onSave={(input) => run(() => updateCustomer(customer.id, input))}
         />
@@ -361,19 +365,29 @@ function PaymentForm({
 function EditCustomerForm({
   name: initialName,
   phone: initialPhone,
+  khataLimitPaise,
   onSave,
   onCancel,
 }: {
   name: string;
   phone: string | null;
-  onSave: (input: { name: string; phone: string | null }) => void;
+  khataLimitPaise: number | null;
+  onSave: (input: { name: string; phone: string | null; khataLimitPaise: number | null }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone ?? '');
+  const [limit, setLimit] = useState(
+    khataLimitPaise !== null ? String(Math.round(khataLimitPaise / 100)) : '',
+  );
+  const limitPaise = limit.trim() ? parseRupees(limit) : null;
   const errors = {
     name: name.trim().length < 1 ? 'Enter the customer’s name' : undefined,
     phone: phone.trim() && !normalizePhone(phone) ? 'Enter a 10-digit mobile number' : undefined,
+    limit:
+      limit.trim() && (limitPaise === null || limitPaise < 100)
+        ? 'Enter an amount in rupees, or leave it empty'
+        : undefined,
   };
   return (
     <Tile>
@@ -388,10 +402,20 @@ function EditCustomerForm({
           placeholder="98765 04521"
           error={errors.phone}
         />
+        <TextField
+          label="Khata limit (optional)"
+          inTile
+          value={limit}
+          onChangeText={setLimit}
+          keyboardType="number-pad"
+          placeholder="₹2,000"
+          hint="Checkout warns when a khata bill goes over it. It never blocks."
+          error={errors.limit}
+        />
         <Button
           label="Save customer"
-          disabled={!!errors.name || !!errors.phone}
-          onPress={() => onSave({ name, phone: phone.trim() || null })}
+          disabled={!!errors.name || !!errors.phone || !!errors.limit}
+          onPress={() => onSave({ name, phone: phone.trim() || null, khataLimitPaise: limitPaise })}
         />
         <TextButton label="Cancel" onPress={onCancel} />
       </View>

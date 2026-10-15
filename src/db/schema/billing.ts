@@ -13,7 +13,9 @@ export const bills = sqliteTable(
     customerId: text('customer_id'),
     /** bill_prefix + counter, made on the phone: "A-103". */
     number: text('number').notNull(),
+    /** What the customer pays: the lines' sum minus discountPaise (discount and round-off). */
     totalPaise: integer('total_paise').notNull(),
+    discountPaise: integer('discount_paise').notNull().default(0),
     /** 16 random bytes, base64url: the bill link works before the bill syncs. */
     publicToken: text('public_token').notNull(),
     voidedAt: text('voided_at'),

@@ -105,6 +105,7 @@ function customersColumns() {
     deletedAt: customers.deletedAt,
     name: customers.name,
     phone: customers.phone,
+    khataLimitPaise: customers.khataLimitPaise,
     linkedUserId: customers.linkedUserId,
   };
 }

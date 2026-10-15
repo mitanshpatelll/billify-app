@@ -134,7 +134,16 @@ describe('saveBill', () => {
     ]);
     const [billEntry] = db.select().from(outbox).all();
     expect(Object.keys(billEntry?.data ?? {}).sort()).toEqual(
-      ['createdAt', 'customerId', 'id', 'number', 'publicToken', 'totalPaise', 'voidedAt'].sort(),
+      [
+        'createdAt',
+        'customerId',
+        'discountPaise',
+        'id',
+        'number',
+        'publicToken',
+        'totalPaise',
+        'voidedAt',
+      ].sort(),
     );
   });
 
@@ -183,6 +192,16 @@ describe('saveBill', () => {
       (b) => ({ ...b, customerId: '0192f3a1-0000-7000-8000-00000000dead' }),
       'CUSTOMER_NOT_FOUND',
     ],
+    [
+      'a discount as big as the bill',
+      (b) => ({ ...b, discountPaise: 4900, payments: [{ method: 'cash', amountPaise: 1 }] }),
+      'INVALID_DISCOUNT',
+    ],
+    [
+      'payments that ignore the discount',
+      (b) => ({ ...b, discountPaise: 100 }),
+      'PAYMENTS_MISMATCH',
+    ],
     ['an empty cart', (b) => ({ ...b, lines: [] }), 'EMPTY_BILL'],
     ['a zero quantity', (b) => ({ ...b, lines: [line(maggi, 0)] }), 'INVALID_QTY'],
     ['a quantity that rounds to 0', (b) => ({ ...b, lines: [line(sugar, 0.0004)] }), 'INVALID_QTY'],
@@ -190,6 +209,17 @@ describe('saveBill', () => {
     expect(() => billsRepo.saveBill(db, change(cart))).toThrow(expect.objectContaining({ code }));
     expect(db.select().from(bills).all()).toEqual([]);
     expect(db.select().from(outbox).all()).toEqual([]);
+  });
+
+  it('takes a discount off the total and keeps it on the bill', () => {
+    const bill = billsRepo.saveBill(db, {
+      ...cart,
+      discountPaise: 400,
+      payments: [{ method: 'cash', amountPaise: 4500 }],
+    });
+    expect(bill).toMatchObject({ totalPaise: 4500, discountPaise: 400 });
+    const [entry] = db.select().from(outbox).all();
+    expect(entry?.data).toMatchObject({ totalPaise: 4500, discountPaise: 400 });
   });
 
   it('saving the same draft twice returns the first bill and writes nothing new', () => {

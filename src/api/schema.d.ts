@@ -313,6 +313,7 @@ export interface paths {
                       deletedAt: string | null;
                       name: string;
                       phone: string | null;
+                      khataLimitPaise: number | null;
                       /** Format: uuid */
                       linkedUserId: string | null;
                     };
@@ -334,6 +335,7 @@ export interface paths {
                       customerId: string | null;
                       number: string;
                       totalPaise: number;
+                      discountPaise: number;
                       publicToken: string;
                       /** Format: date-time */
                       voidedAt: string | null;
@@ -487,6 +489,7 @@ export interface paths {
                   unitPricePaise: number;
                 }[];
                 totalPaise: number;
+                discountPaise: number;
                 payments: {
                   /** @enum {string} */
                   method: 'cash' | 'upi' | 'khata';
@@ -694,6 +697,7 @@ export interface paths {
                   unitPricePaise: number;
                 }[];
                 totalPaise: number;
+                discountPaise: number;
                 payments: {
                   /** @enum {string} */
                   method: 'cash' | 'upi' | 'khata';
@@ -1032,6 +1036,7 @@ export interface paths {
                 /** Format: date-time */
                 createdAt: string;
                 totalPaise: number;
+                discountPaise: number;
                 items: {
                   name: string;
                   qty: number;

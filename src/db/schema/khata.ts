@@ -10,6 +10,8 @@ export const customers = sqliteTable('customers', {
   name: text('name').notNull(),
   /** 10-digit Indian mobile number, no +91. */
   phone: text('phone'),
+  /** Optional khata limit (D27): checkout warns over it, never blocks. */
+  khataLimitPaise: integer('khata_limit_paise'),
   /** Server-owned (set by the customer's claim, M2): pulled, never pushed. */
   linkedUserId: text('linked_user_id'),
 });

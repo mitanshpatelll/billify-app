@@ -1,5 +1,6 @@
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
+import { MAX_PAISE } from '@/lib/domain';
 import { newId } from '@/lib/ids';
 import { normalizePhone } from '@/lib/phone';
 
@@ -33,6 +34,7 @@ export function createCustomer(db: Db, input: NewCustomer, now = new Date()): Cu
       deletedAt: null,
       name,
       phone,
+      khataLimitPaise: null,
       linkedUserId: null,
     };
     tx.insert(customers).values(row).run();
@@ -64,11 +66,14 @@ export function searchCustomers(db: Db, query: string, limit = 50): CustomerRow[
     .all();
 }
 
-/** Edits name / phone. Only fields that change are written and pushed (last write wins). */
+/**
+ * Edits name / phone / khata limit (null = no limit). Only fields that change are written and
+ * pushed (last write wins).
+ */
 export function updateCustomer(
   db: Db,
   id: string,
-  input: { name?: string; phone?: string | null },
+  input: { name?: string; phone?: string | null; khataLimitPaise?: number | null },
   now = new Date(),
 ): CustomerRow {
   return db.transaction((tx) => {
@@ -76,7 +81,7 @@ export function updateCustomer(
     if (!current || current.deletedAt) {
       throw new RepoError('CUSTOMER_NOT_FOUND', 'This customer is gone');
     }
-    const changed: Partial<Pick<CustomerRow, 'name' | 'phone'>> = {};
+    const changed: Partial<Pick<CustomerRow, 'name' | 'phone' | 'khataLimitPaise'>> = {};
     if (input.name !== undefined) {
       const name = input.name.trim();
       if (name.length < 1 || name.length > 80) {
@@ -91,6 +96,13 @@ export function updateCustomer(
         if (!phone) throw new RepoError('INVALID_PHONE', 'Enter a 10-digit mobile number');
       }
       if (phone !== current.phone) changed.phone = phone;
+    }
+    if (input.khataLimitPaise !== undefined) {
+      const limit = input.khataLimitPaise;
+      if (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAISE)) {
+        throw new RepoError('INVALID_LIMIT', 'Enter a khata limit in rupees, or leave it empty');
+      }
+      if (limit !== current.khataLimitPaise) changed.khataLimitPaise = limit;
     }
     if (Object.keys(changed).length === 0) return current;
     const at = now.toISOString();

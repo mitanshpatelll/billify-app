@@ -177,7 +177,11 @@ export function QueryThreadScreen() {
         </View>
       </Tile>
 
-      <BillItemsTile items={bill.items} totalPaise={bill.totalPaise} />
+      <BillItemsTile
+        items={bill.items}
+        totalPaise={bill.totalPaise}
+        discountPaise={bill.discountPaise}
+      />
       {role === 'shop' ? (
         <ListGroup>
           <ListRow

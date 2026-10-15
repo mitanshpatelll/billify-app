@@ -11,10 +11,18 @@ type QtyStepperProps = {
   onDecrement: () => void;
   /** Spoken item name, e.g. "Amul Butter 100 g". */
   itemLabel: string;
+  /** Tap the number to type a quantity (loose items, 12 pieces). */
+  onPressValue?: () => void;
 };
 
 /** Minus / value / plus on stone, neem icons. 30 tall with 44 touch targets. */
-export function QtyStepper({ value, onIncrement, onDecrement, itemLabel }: QtyStepperProps) {
+export function QtyStepper({
+  value,
+  onIncrement,
+  onDecrement,
+  itemLabel,
+  onPressValue,
+}: QtyStepperProps) {
   return (
     <View style={styles.stepper}>
       <Pressable
@@ -26,9 +34,23 @@ export function QtyStepper({ value, onIncrement, onDecrement, itemLabel }: QtySt
       >
         <Icon icon={Minus} size={16} color="primary" />
       </Pressable>
-      <Text variant="bodyStrong" style={styles.value} accessibilityLabel={`Quantity ${value}`}>
-        {value}
-      </Text>
+      {onPressValue ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Quantity ${value}`}
+          accessibilityHint={`Type the quantity of ${itemLabel}`}
+          onPress={onPressValue}
+          style={({ pressed }) => [styles.valueButton, pressed && styles.pressed]}
+        >
+          <Text variant="bodyStrong" style={styles.value}>
+            {value}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text variant="bodyStrong" style={styles.value} accessibilityLabel={`Quantity ${value}`}>
+          {value}
+        </Text>
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`More ${itemLabel}`}
@@ -58,6 +80,11 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.sm,
   },
   pressed: { backgroundColor: theme.colors.surfaceVariant },
+  valueButton: {
+    height: theme.sizes.stepper,
+    justifyContent: 'center',
+    borderRadius: theme.radius.sm,
+  },
   value: {
     minWidth: 52,
     textAlign: 'center',

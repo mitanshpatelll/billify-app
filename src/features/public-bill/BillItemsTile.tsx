@@ -21,11 +21,14 @@ function unitPrice(unit: Unit, paise: number) {
 export function BillItemsTile({
   items,
   totalPaise,
+  discountPaise = 0,
   payments,
   voided = false,
 }: {
   items: Item[];
   totalPaise: number;
+  /** Discount and round-off: the lines add up to totalPaise + discountPaise. */
+  discountPaise?: number;
   payments?: Payment[];
   voided?: boolean;
 }) {
@@ -55,6 +58,25 @@ export function BillItemsTile({
       </View>
 
       <View style={styles.dashed} />
+
+      {discountPaise > 0 ? (
+        <View style={styles.adjustments}>
+          <View style={styles.spread}>
+            <Text variant="bodySecondary" tone="muted">
+              Items
+            </Text>
+            <Money paise={totalPaise + discountPaise} variant="bodySecondary" tone="muted" />
+          </View>
+          <View style={styles.spread}>
+            <Text variant="bodySecondary" tone="muted">
+              Discount
+            </Text>
+            <Text variant="bodySecondary" tone="muted" style={styles.tabular}>
+              −{formatRupees(discountPaise)}
+            </Text>
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.totalRow}>
         <Text variant="titleScreen">Total</Text>
@@ -113,6 +135,8 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.space.xs,
   },
   struck: { textDecorationLine: 'line-through' },
+  adjustments: { gap: theme.space.xxs, paddingTop: theme.space.xxs },
+  tabular: { fontVariant: ['tabular-nums'] },
   payments: {
     gap: theme.space.xxs,
     paddingTop: theme.space.sm,
