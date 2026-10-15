@@ -16,7 +16,13 @@ export function useShop(): Shop | null {
 export function storeShop(server: ServerShop, { setupDone }: { setupDone: boolean }): void {
   adoptShop(
     db,
-    { id: server.id, name: server.name, upiId: server.upiId, billPrefix: server.billPrefix },
+    {
+      id: server.id,
+      name: server.name,
+      upiId: server.upiId,
+      billPrefix: server.billPrefix,
+      phone: server.phone,
+    },
     setupDone,
   );
 }

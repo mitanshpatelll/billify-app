@@ -15,6 +15,13 @@
       "when": 1792056829302,
       "tag": "0001_khata_settlement_method",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792062904452,
+      "tag": "0002_shop_phone",
+      "breakpoints": true
     }
   ]
 }

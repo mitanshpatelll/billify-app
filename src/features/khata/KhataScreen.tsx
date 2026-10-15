@@ -1,11 +1,9 @@
 import { router, useIsFocused } from 'expo-router';
 import { BookOpen, Search } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { ago } from '@/lib/dates';
-import { formatRupees } from '@/lib/money';
 import {
   Avatar,
   EmptyState,
@@ -27,6 +25,7 @@ import {
   type CustomerBalance,
   type KhataFilter,
 } from './khata';
+import { BalanceText } from './BalanceText';
 
 const FILTERS: { value: KhataFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -143,41 +142,6 @@ function lastActivity(row: CustomerBalance): string {
   return 'No bills yet';
 }
 
-/** "₹1,240.00 due" in haldi, "Settled" in neem, "₹50.00 advance" when paid ahead. */
-export function BalanceText({ balancePaise }: { balancePaise: number }) {
-  if (balancePaise > 0) {
-    return (
-      <View style={styles.balance}>
-        <Text variant="bodyStrong" tone="khata" style={styles.tabular}>
-          {formatRupees(balancePaise)}
-        </Text>
-        <Text variant="caption" tone="khata">
-          due
-        </Text>
-      </View>
-    );
-  }
-  if (balancePaise < 0) {
-    return (
-      <View style={styles.balance}>
-        <Text variant="bodyStrong" tone="primary" style={styles.tabular}>
-          {formatRupees(-balancePaise)}
-        </Text>
-        <Text variant="caption" tone="primary">
-          advance
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <Text variant="bodyStrong" tone="primary">
-      Settled
-    </Text>
-  );
-}
-
 const styles = StyleSheet.create(() => ({
   flex: { flex: 1 },
-  balance: { alignItems: 'flex-end' },
-  tabular: { fontVariant: ['tabular-nums'] },
 }));

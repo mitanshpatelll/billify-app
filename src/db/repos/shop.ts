@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm';
 import { shop, type ShopRow } from '../schema';
 import type { Db } from '../types';
 
-export type ShopDetails = Pick<ShopRow, 'id' | 'name' | 'upiId' | 'billPrefix'>;
+export type ShopDetails = Pick<ShopRow, 'id' | 'name' | 'upiId' | 'billPrefix'> &
+  Partial<Pick<ShopRow, 'phone'>>;
 
 /** The owner's shop on this phone, or undefined before setup. */
 export function getShop(db: Db): ShopRow | undefined {
@@ -27,6 +28,7 @@ export function saveShop(db: Db, details: ShopDetails, setupDone = false): void 
           name: details.name,
           upiId: details.upiId,
           billPrefix: details.billPrefix,
+          phone: details.phone ?? null,
           setupDone: done,
         },
       })

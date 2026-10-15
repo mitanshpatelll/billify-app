@@ -6,22 +6,12 @@ import { Platform, Share, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { isApiError } from '@/api/client';
+import { SaveToBillify } from '@/features/customer-bills/SaveToBillify';
 import { billUrl } from '@/features/sharing/links';
-import { formatRupees, lineTotalPaise } from '@/lib/money';
-import { paymentLabel, paymentName } from '@/lib/payments';
-import { formatQty } from '@/lib/units';
-import {
-  Badge,
-  Button,
-  EmptyState,
-  ErrorBanner,
-  IconButton,
-  Money,
-  Screen,
-  Text,
-  Tile,
-} from '@/ui';
+import { formatRupees } from '@/lib/money';
+import { Badge, Button, EmptyState, ErrorBanner, IconButton, Screen, Text, Tile } from '@/ui';
 
+import { BillItemsTile } from './BillItemsTile';
 import { BILL_NOT_FOUND, type PublicBill, usePublicBill } from './use-public-bill';
 
 // Customers are in India: show the bill's time in IST wherever the page is opened.
@@ -88,18 +78,16 @@ export function PublicBillScreen() {
 
   return (
     <Screen>
-      <Head>
-        <title>{query.data ? pageTitle(query.data) : 'Bill · Billify'}</title>
-        <meta name="robots" content="noindex" />
-      </Head>
+      {/* Web only: on iOS, expo-router's Head is Handoff and wants a hosted origin. */}
+      {Platform.OS === 'web' ? (
+        <Head>
+          <title>{query.data ? pageTitle(query.data) : 'Bill · Billify'}</title>
+          <meta name="robots" content="noindex" />
+        </Head>
+      ) : null}
       <View style={styles.page}>{content}</View>
     </Screen>
   );
-}
-
-// Gram items carry a per-gram price; customers read loose goods per kg ("₹160.00 / kg").
-function unitPrice(unit: string, paise: number) {
-  return unit === 'g' ? `${formatRupees(paise * 1000)} / kg` : formatRupees(paise);
 }
 
 function pageTitle({ shop, bill }: PublicBill) {
@@ -118,7 +106,6 @@ function status(bill: PublicBill['bill']) {
 
 function BillView({ bill: { shop, bill }, token }: { bill: PublicBill; token: string }) {
   const badge = status(bill);
-  const itemCount = bill.items.length;
   const canShare = Platform.OS !== 'web' || typeof navigator.share === 'function';
 
   function share() {
@@ -162,64 +149,18 @@ function BillView({ bill: { shop, bill }, token }: { bill: PublicBill; token: st
         />
       ) : null}
 
-      <Tile>
-        <View style={styles.spread}>
-          <Text variant="label" tone="muted">
-            Items
-          </Text>
-          <Text variant="label" tone="muted">
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
+      <BillItemsTile
+        items={bill.items}
+        totalPaise={bill.totalPaise}
+        payments={bill.payments}
+        voided={bill.voided}
+      />
 
-        <View style={styles.items}>
-          {bill.items.map((item, index) => (
-            <View key={`${index}-${item.name}`} style={styles.item}>
-              <View style={styles.flex}>
-                <Text variant="body">{item.name}</Text>
-                <Text variant="caption" tone="muted">
-                  {formatQty(item.qty, item.unit)} × {unitPrice(item.unit, item.unitPricePaise)}
-                </Text>
-              </View>
-              <Money paise={lineTotalPaise(item.qty, item.unitPricePaise)} variant="body" />
-            </View>
-          ))}
-        </View>
+      <SaveToBillify token={token} />
 
-        <View style={styles.dashed} />
-
-        <View style={styles.totalRow}>
-          <Text variant="titleScreen">Total</Text>
-          {bill.payments.length > 0 ? <Badge label={paymentLabel(bill.payments)} /> : null}
-          <View style={styles.flex} />
-          <Money
-            paise={bill.totalPaise}
-            variant="total"
-            style={bill.voided ? styles.struck : undefined}
-          />
-        </View>
-
-        {bill.payments.length > 1 ? (
-          <View style={styles.payments}>
-            {bill.payments.map((payment, index) => (
-              <View key={`${index}-${payment.method}`} style={styles.spread}>
-                <Text variant="bodySecondary" tone="muted">
-                  {paymentName(payment.method)}
-                </Text>
-                {/* Haldi is for amounts due on khata only (DESIGN.md). */}
-                <Money
-                  paise={payment.amountPaise}
-                  variant="bodySecondary"
-                  tone={payment.method === 'khata' ? 'khata' : 'muted'}
-                />
-              </View>
-            ))}
-          </View>
-        ) : null}
-      </Tile>
-
+      {/* D27: shop owners are customers of other shops too. One quiet line, no pitch. */}
       <Text variant="caption" tone="muted" align="center">
-        Bill from {shop.name}, sent with Billify
+        Bill from {shop.name} · Made with Billify
       </Text>
     </>
   );
@@ -260,7 +201,6 @@ const styles = StyleSheet.create((theme) => ({
     alignSelf: 'center',
     gap: theme.space.gap,
   },
-  flex: { flex: 1 },
   headRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -269,37 +209,6 @@ const styles = StyleSheet.create((theme) => ({
   headText: {
     flex: 1,
     gap: theme.space.xxs,
-  },
-  spread: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  items: {
-    gap: theme.space.sm,
-    paddingVertical: theme.space.sm,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.space.sm,
-  },
-  dashed: {
-    borderTopWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: theme.colors.outline,
-    marginVertical: theme.space.xs,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.xs,
-    paddingTop: theme.space.xs,
-  },
-  struck: { textDecorationLine: 'line-through' },
-  payments: {
-    gap: theme.space.xxs,
-    paddingTop: theme.space.sm,
   },
   loading: { gap: theme.space.gap },
   bone: {

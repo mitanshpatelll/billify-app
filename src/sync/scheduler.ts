@@ -85,10 +85,11 @@ export function requestSync({ force = false }: { force?: boolean } = {}): void {
 
 /**
  * Stops sync at once: called first thing on sign-out, before the phone is wiped, so an answer
- * still on its way can't write the old shop back. Safe to call twice.
+ * still on its way can't write the old shop back. Safe to call twice. Returns whether it was
+ * running.
  */
-export function stopSync(): void {
-  if (!started) return;
+export function stopSync(): boolean {
+  if (!started) return false;
   generation += 1;
   started = false;
   again = false;
@@ -97,6 +98,7 @@ export function stopSync(): void {
   clearTimeout(writeTimer);
   clearTimeout(retryTimer);
   useSyncStatus.setState({ syncing: false, problem: null });
+  return true;
 }
 
 /** Starts the triggers for the signed-in shop. The returned function stops them. */

@@ -35,7 +35,7 @@ export async function createMyShop(
 
 /** PATCH /v1/shops/me (16 More → Edit shop): online only, like setup. */
 export async function updateMyShop(
-  input: Partial<Pick<ServerShop, 'name' | 'upiId' | 'billPrefix'>>,
+  input: Partial<Pick<ServerShop, 'name' | 'upiId' | 'billPrefix' | 'phone'>>,
 ): Promise<ServerShop> {
   return (await unwrap(api.PATCH('/v1/shops/me', { body: input }))).shop;
 }

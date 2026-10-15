@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Hash, QrCode, Store, Wifi } from 'lucide-react-native';
+import { Hash, Phone, QrCode, Store, Wifi } from 'lucide-react-native';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { isApiError } from '@/api/client';
 import { BILL_PREFIX_PATTERN, formatBillNumber } from '@/lib/bill-number';
+import { normalizePhone } from '@/lib/phone';
 import { UPI_ID_PATTERN } from '@/lib/upi';
 import { Button, ErrorBanner, Icon, Screen, StackHeader, Text, TextField, Tile } from '@/ui';
 
@@ -27,6 +28,7 @@ export function EditShopScreen() {
   const [name, setName] = useState(shop?.name ?? '');
   const [upiId, setUpiId] = useState(shop?.upiId ?? '');
   const [prefix, setPrefix] = useState(shop?.billPrefix ?? 'A');
+  const [phone, setPhone] = useState(shop?.phone ?? '');
   const save = useMutation({
     mutationFn: updateMyShop,
     onSuccess: (server) => {
@@ -39,6 +41,7 @@ export function EditShopScreen() {
   const upiOk = UPI_ID_PATTERN.test(upiId.trim());
   const prefixOk = BILL_PREFIX_PATTERN.test(prefix);
   const prefixChanged = !!shop && prefix !== shop.billPrefix;
+  const phoneOk = !phone.trim() || !!normalizePhone(phone);
 
   return (
     <Screen
@@ -47,12 +50,13 @@ export function EditShopScreen() {
         <Button
           label="Save"
           loading={save.isPending}
-          disabled={!nameOk || !upiOk || !prefixOk}
+          disabled={!nameOk || !upiOk || !prefixOk || !phoneOk}
           onPress={() =>
             save.mutate({
               name: name.trim(),
               upiId: upiId.trim().toLowerCase(),
               billPrefix: prefix,
+              phone: normalizePhone(phone),
             })
           }
         />
@@ -103,6 +107,17 @@ export function EditShopScreen() {
                 : 'Letters before each bill number'
             }
             error={!prefixOk ? 'Use 1 to 3 letters' : undefined}
+          />
+          <TextField
+            label="Shop phone (optional)"
+            icon={Phone}
+            inTile
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            placeholder="98765 04521"
+            hint="Customers who saved your bills can call or WhatsApp you"
+            error={!phoneOk ? 'Enter a 10-digit mobile number' : undefined}
           />
         </View>
       </Tile>

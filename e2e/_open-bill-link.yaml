@@ -1,0 +1,13 @@
+# Opens a bill link in the app (21) like a tap on it in WhatsApp: billify://b/<token>.
+appId: com.glitchover.billify.dev
+---
+- openLink: billify://b/${TOKEN}
+# iOS asks before an app opens its own link.
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible: 'Save to Billify'
+    timeout: 30000

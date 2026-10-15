@@ -60,6 +60,7 @@ export interface paths {
             name: string;
             upiId: string;
             billPrefix: string;
+            phone?: string | null;
           };
         };
       };
@@ -77,6 +78,7 @@ export interface paths {
                 name: string;
                 upiId: string;
                 billPrefix: string;
+                phone: string | null;
                 /** Format: date-time */
                 createdAt: string;
                 /** Format: date-time */
@@ -123,6 +125,7 @@ export interface paths {
                 name: string;
                 upiId: string;
                 billPrefix: string;
+                phone: string | null;
                 /** Format: date-time */
                 createdAt: string;
                 /** Format: date-time */
@@ -152,6 +155,7 @@ export interface paths {
             name?: string;
             upiId?: string;
             billPrefix?: string;
+            phone?: string | null;
           };
         };
       };
@@ -169,6 +173,7 @@ export interface paths {
                 name: string;
                 upiId: string;
                 billPrefix: string;
+                phone: string | null;
                 /** Format: date-time */
                 createdAt: string;
                 /** Format: date-time */
@@ -533,6 +538,611 @@ export interface paths {
         };
       };
     };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/public/bills/{token}/claim': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Save a bill to my account */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          token: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @enum {string} */
+              kind: 'customer' | 'bill';
+              /** Format: uuid */
+              billId: string;
+              shopName: string;
+              customerName: string | null;
+              already: boolean;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/me/bills': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My bills */
+    get: {
+      parameters: {
+        query?: {
+          cursor?: string;
+          limit?: number;
+          shopId?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              bills: {
+                /** Format: uuid */
+                id: string;
+                shopName: string;
+                number: string;
+                /** Format: date-time */
+                createdAt: string;
+                totalPaise: number;
+                /** @enum {string} */
+                status: 'paid' | 'khata' | 'void';
+                publicToken: string;
+                /** Format: uuid */
+                shopId: string;
+              }[];
+              nextCursor: string | null;
+              shops: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/me/bills/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One of my bills */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              shop: {
+                name: string;
+                phone: string | null;
+              };
+              bill: {
+                /** Format: uuid */
+                id: string;
+                number: string;
+                /** Format: date-time */
+                createdAt: string;
+                items: {
+                  name: string;
+                  qty: number;
+                  /** @enum {string} */
+                  unit: 'pcs' | 'kg' | 'g' | 'litre';
+                  unitPricePaise: number;
+                }[];
+                totalPaise: number;
+                payments: {
+                  /** @enum {string} */
+                  method: 'cash' | 'upi' | 'khata';
+                  amountPaise: number;
+                }[];
+                /** @enum {string} */
+                status: 'paid' | 'khata' | 'void';
+                publicToken: string;
+              };
+              /** Format: date-time */
+              queryWindowEndsAt: string;
+              query: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: 'missing' | 'extra' | 'wrong_price' | 'other';
+                /** @enum {string} */
+                status: 'open' | 'resolved';
+                unread: boolean;
+              } | null;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/me/khata': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My khata */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              khata: {
+                shopName: string;
+                customerName: string;
+                balancePaise: number;
+                /** Format: date-time */
+                lastEntryAt: string | null;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/devices/push-token': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Register this device for push notifications */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            token: string;
+            /** @enum {string} */
+            platform: 'ios' | 'android';
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': null;
+          };
+        };
+      };
+    };
+    /** Stop push notifications on this device (sign out) */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            token: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': null;
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/shops/me/customers/{id}/link': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Unlink a customer from the account that saved them */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': null;
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/bills/{id}/queries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Raise a query on one of my bills */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            type: 'missing' | 'extra' | 'wrong_price' | 'other';
+            note: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** Format: uuid */
+              id: string;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/shops/me/queries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My shop's bill queries */
+    get: {
+      parameters: {
+        query?: {
+          status?: 'open' | 'resolved' | 'all';
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              queries: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: 'missing' | 'extra' | 'wrong_price' | 'other';
+                /** @enum {string} */
+                status: 'open' | 'resolved';
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: uuid */
+                billId: string;
+                billNumber: string;
+                customerName: string | null;
+                lastMessage: string | null;
+                unread: boolean;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/queries/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A bill query with its messages */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              query: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: 'missing' | 'extra' | 'wrong_price' | 'other';
+                /** @enum {string} */
+                status: 'open' | 'resolved';
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                resolvedAt: string | null;
+              };
+              /** @enum {string} */
+              role: 'shop' | 'customer';
+              shopName: string;
+              customerName: string | null;
+              bill: {
+                /** Format: uuid */
+                id: string;
+                number: string;
+                /** Format: date-time */
+                createdAt: string;
+                totalPaise: number;
+                items: {
+                  name: string;
+                  qty: number;
+                  /** @enum {string} */
+                  unit: 'pcs' | 'kg' | 'g' | 'litre';
+                  unitPricePaise: number;
+                }[];
+              };
+              messages: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                author: 'shop' | 'customer';
+                body: string;
+                /** Format: date-time */
+                createdAt: string;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Mark a bill query resolved */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            status: 'resolved';
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'open' | 'resolved';
+            };
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
+  '/v1/queries/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply on a bill query */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            body: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              author: 'shop' | 'customer';
+              body: string;
+              /** Format: date-time */
+              createdAt: string;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;

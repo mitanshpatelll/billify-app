@@ -1,3 +1,4 @@
+import { env } from '@/config/env';
 import { khataReminderText, reorderText } from '@/features/sharing/links';
 
 import { suggestedOrder } from './stock';
@@ -28,7 +29,10 @@ it('builds the reorder message', () => {
       { name: 'Maggi Masala 70 g', qty: 48, unit: 'pcs' },
       { name: 'Sugar (loose)', qty: 25, unit: 'kg' },
     ]),
-  ).toBe('Order from Sharma Kirana\n• Maggi Masala 70 g: 48\n• Sugar (loose): 25 kg');
+  ).toBe(
+    'Order from Sharma Kirana\n• Maggi Masala 70 g: 48\n• Sugar (loose): 25 kg\n\n' +
+      `Made with Billify · ${env.webUrl}`,
+  );
 });
 
 it('builds the khata reminder', () => {

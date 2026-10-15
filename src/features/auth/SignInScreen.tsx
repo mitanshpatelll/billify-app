@@ -1,6 +1,6 @@
 import { Mail } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { isApiError } from '@/api/client';
@@ -21,6 +21,7 @@ import {
 import { signInForDevelopment, signInWithGoogle, type SignedIn } from './auth-api';
 import { getGoogleIdToken, googleSignInAvailable } from './google';
 import { GoogleMark } from './GoogleMark';
+import { GoogleWebButton } from './GoogleWebButton';
 import { useSession } from './session-store';
 
 /** What went wrong, in the shopkeeper's words. */
@@ -68,6 +69,9 @@ export function SignInScreen() {
       return idToken ? signInWithGoogle(idToken) : null; // null: the user backed out
     });
 
+  // Web: Google's own button hands over the ID token (D25).
+  const onWebIdToken = (idToken: string) => void run('google', () => signInWithGoogle(idToken));
+
   const devSignIn = () => {
     if (devEmail.trim()) void run('dev', () => signInForDevelopment(devEmail.trim()));
   };
@@ -97,14 +101,18 @@ export function SignInScreen() {
         <ErrorBanner title="Couldn't sign in" message={error} onDismiss={() => setError(null)} />
       ) : null}
 
-      <Button
-        label="Continue with Google"
-        variant="secondary"
-        leading={<GoogleMark />}
-        loading={busy === 'google'}
-        disabled={!googleSignInAvailable || (busy !== null && busy !== 'google')}
-        onPress={continueWithGoogle}
-      />
+      {Platform.OS === 'web' && googleSignInAvailable ? (
+        <GoogleWebButton onIdToken={onWebIdToken} onError={setError} />
+      ) : (
+        <Button
+          label="Continue with Google"
+          variant="secondary"
+          leading={<GoogleMark />}
+          loading={busy === 'google'}
+          disabled={!googleSignInAvailable || (busy !== null && busy !== 'google')}
+          onPress={continueWithGoogle}
+        />
+      )}
       {!googleSignInAvailable ? (
         <Text variant="caption" tone="muted" align="center">
           Google sign-in isn’t set up in this build yet.

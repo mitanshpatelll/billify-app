@@ -1,0 +1,99 @@
+# M2 customer side (User Flows §7, §8): open a bill link, Save to Billify (sign in first), the
+# saved bill, a bill query and its thread, a walk-in bill, My bills, My khata, sign out.
+# Needs a shop seeded on the API (scripts/e2e-seed-customer.mjs): KHATA_TOKEN (a bill on
+# Ramesh's khata), WALKIN_TOKEN (a walk-in bill), OWNER_TOKEN (the shop's session, to reply).
+appId: com.glitchover.billify.dev
+---
+- evalScript: ${output.email = 'customer-' + Date.now() + '@billify.test'}
+- clearState
+- clearKeychain
+- runFlow: _open-app.yaml
+
+# 21 → Save to Billify → sign in → back on the bill (23)
+- runFlow:
+    file: _open-bill-link.yaml
+    env:
+      TOKEN: ${KHATA_TOKEN}
+- assertVisible: 'Sharma Kirana'
+- tapOn: 'Save to Billify'
+- tapOn:
+    text: 'Email.*'
+    index: 1
+- eraseText: 40
+- inputText: ${output.email}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'Saved. Your bills and khata from Sharma Kirana are in My bills now.'
+    timeout: 30000
+- assertVisible: 'A-201'
+- assertVisible: 'Toor Dal 1 kg'
+- assertVisible: 'Call shop, Sharma Kirana'
+- assertVisible: 'WhatsApp Sharma Kirana'
+
+# 24 Raise a query (within 24 hours)
+- scrollUntilVisible:
+    element: 'Raise a query'
+- tapOn: 'Raise a query'
+- tapOn: 'Wrong price'
+- scrollUntilVisible:
+    element: 'Send query'
+- tapOn: 'Note for the shop .*' # multiline: label + placeholder
+- inputText: 'Maggi was 12.50 on the shelf, charged more'
+- tapOn: 'What’s wrong\?'
+- tapOn: 'Send query'
+- extendedWaitUntil:
+    visible: 'Bill A-201 · Wrong price'
+    timeout: 15000
+- assertVisible: 'You: Maggi was 12.50 on the shelf, charged more'
+- tapOn: 'Back'
+- assertVisible: 'Your query · Wrong price.*'
+
+# The shop replies (from its phone; here straight to the API)
+- runScript:
+    file: _shop-replies.js
+    env:
+      API_URL: http://localhost:3100
+      OWNER_TOKEN: ${OWNER_TOKEN}
+- tapOn: 'Back'
+- tapOn: 'Sharma Kirana.*A-201.*'
+- extendedWaitUntil:
+    visible: 'Your query · Wrong price, New reply from Sharma Kirana.*'
+    timeout: 15000
+- tapOn: 'Your query · Wrong price.*'
+- assertVisible: 'Sharma Kirana: Sorry, we will return the difference at the counter'
+- tapOn: 'Reply Reply to .*'
+- inputText: 'Thanks, will come by'
+- tapOn: 'Send'
+- extendedWaitUntil:
+    visible: 'You: Thanks, will come by'
+    timeout: 15000
+- tapOn: 'Back'
+- assertVisible: 'Your query · Wrong price, Waiting for the shop.*'
+- tapOn: 'Back'
+
+# A walk-in bill: just that bill, no khata
+- runFlow:
+    file: _open-bill-link.yaml
+    env:
+      TOKEN: ${WALKIN_TOKEN}
+- tapOn: 'Save to Billify'
+- extendedWaitUntil:
+    visible: 'Saved to My bills.'
+    timeout: 15000
+- assertVisible: 'Amul Butter 100 g'
+- tapOn: 'Back'
+
+# 22 My bills, 25 My khata, account
+- extendedWaitUntil:
+    visible: 'Sharma Kirana.*A-202.*'
+    timeout: 15000
+- assertVisible: 'Sharma Kirana.*A-201.*'
+- tapOn: 'Khata, tab.*'
+- assertVisible: '.*Sharma Kirana.*'
+- assertVisible: '.*₹420.00.*'
+- tapOn: 'Account, tab.*'
+- assertVisible: ${output.email}
+- tapOn: 'Sign out'
+- extendedWaitUntil:
+    visible: 'How will you use Billify\?'
+    timeout: 15000

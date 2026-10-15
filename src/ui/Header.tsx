@@ -15,6 +15,12 @@ type StackHeaderProps = {
   right?: ReactNode;
 };
 
+// Back with nowhere to go back to (a screen opened straight from a link): home instead.
+function goBack() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
 /** Non-tab screens: back (or close) button + nav title. No logo, no avatar. */
 export function StackHeader({ title, action = 'back', onAction, right }: StackHeaderProps) {
   return (
@@ -23,7 +29,7 @@ export function StackHeader({ title, action = 'back', onAction, right }: StackHe
         <IconButton
           icon={action === 'close' ? X : ArrowLeft}
           accessibilityLabel={action === 'close' ? 'Close' : 'Back'}
-          onPress={onAction ?? (() => router.back())}
+          onPress={onAction ?? goBack}
         />
       ) : null}
       {title ? (

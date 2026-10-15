@@ -7,6 +7,8 @@ export const shop = sqliteTable('shop', {
   name: text('name').notNull(),
   upiId: text('upi_id').notNull(),
   billPrefix: text('bill_prefix').notNull(),
+  /** Optional: customers see Call / WhatsApp shop on their bill (23). */
+  phone: text('phone'),
   /** Set after the last setup step (camera), when the tabs open. */
   setupDone: integer('setup_done', { mode: 'boolean' }).notNull().default(false),
 });

@@ -1,0 +1,78 @@
+# M2 on the shop's phone (User Flows §8, D25): a customer's bill query in 20 Bill queries, reply
+# and resolve; the customer shows "On Billify" on 15 and the shop unlinks them; the shop phone in
+# Edit shop. Needs a seeded shop (scripts/e2e-seed-customer.mjs): OWNER_EMAIL, KHATA_TOKEN.
+appId: com.glitchover.billify.dev
+---
+- clearState
+- clearKeychain
+- runFlow: _open-app.yaml
+- tapOn: 'I run a shop.*'
+- tapOn: 'Continue'
+- tapOn:
+    text: 'Email.*'
+    index: 1
+- eraseText: 40
+- inputText: ${OWNER_EMAIL}
+- pressKey: Enter
+# The shop comes down from the server (restore), then billing opens.
+- extendedWaitUntil:
+    visible: 'Bill A-203'
+    timeout: 60000
+
+- runScript:
+    file: _customer-raises.js
+    env:
+      API_URL: http://localhost:3100
+      KHATA_TOKEN: ${KHATA_TOKEN}
+
+# 16 More → 20 Bill queries → the thread
+- tapOn: 'More, tab.*'
+- extendedWaitUntil:
+    visible: 'Bill queries, 1 open, 1 new.*'
+    timeout: 15000
+- tapOn: 'Bill queries, 1 open, 1 new.*'
+- assertVisible: 'Open \(1\)'
+- tapOn: 'A-201 · Ramesh Yadav, Item missing · today · Toor Dal was not in my bag.*'
+- assertVisible: 'Bill A-201 · Item missing'
+- assertVisible: 'Ramesh Yadav: Toor Dal was not in my bag'
+- assertVisible: 'Open bill A-201'
+- tapOn: 'Reply Reply to .*'
+- inputText: 'Sorry! Collect it today'
+- tapOn: 'Send'
+- extendedWaitUntil:
+    visible: 'You: Sorry! Collect it today'
+    timeout: 15000
+- tapOn: 'Mark as resolved'
+- tapOn: 'Resolve' # in the confirmation
+- extendedWaitUntil:
+    visible: 'Resolved .*Anything left is settled at the shop or on khata.'
+    timeout: 15000
+- tapOn: 'Back'
+- assertVisible: 'No open queries'
+- tapOn: 'Resolved \(1\)'
+- assertVisible: 'A-201 · Ramesh Yadav.*Resolved'
+- tapOn: 'Back'
+- assertVisible: 'Bill queries, Questions customers raised on their bills.*'
+
+# 15 Customer khata: On Billify → Unlink
+- tapOn: 'Khata, tab.*'
+- tapOn: 'Ramesh Yadav.*'
+- extendedWaitUntil:
+    visible: 'On Billify'
+    timeout: 30000 # the link comes down with the next pull
+- tapOn: 'Unlink'
+- extendedWaitUntil:
+    visible: 'Unlink from Billify\?'
+    timeout: 5000
+- tapOn:
+    text: 'Unlink'
+    index: 1 # the confirmation's button; 0 is the one on the screen
+- extendedWaitUntil:
+    notVisible: 'On Billify'
+    timeout: 15000
+- tapOn: 'Back'
+
+# Edit shop: the phone customers see on their bill
+- tapOn: 'More, tab.*'
+- tapOn: 'Sharma Kirana. Edit shop'
+- assertVisible: '9876543210'

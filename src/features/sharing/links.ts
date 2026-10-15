@@ -31,10 +31,13 @@ export function billShareText({
 
 type ReorderLine = { name: string; qty: number; unit: Unit };
 
-/** 14 Low stock → WhatsApp to the distributor: plain list, the shop's name on top. */
+/**
+ * 14 Low stock → WhatsApp to the distributor: plain list, the shop's name on top, one quiet
+ * "Made with Billify" line at the end (D27: one distributor serves hundreds of kiranas).
+ */
 export function reorderText(shopName: string, lines: ReorderLine[]): string {
   const items = lines.map((line) => `• ${line.name}: ${formatQty(line.qty, line.unit)}`);
-  return [`Order from ${shopName}`, ...items].join('\n');
+  return [`Order from ${shopName}`, ...items, '', `Made with Billify · ${env.webUrl}`].join('\n');
 }
 
 type Reminder = { customerName: string; duePaise: number; shopName: string; upiId: string };

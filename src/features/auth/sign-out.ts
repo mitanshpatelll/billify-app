@@ -5,6 +5,7 @@ import { queryClient } from '@/api/query-client';
 import { db } from '@/db/client';
 import { clearLocalData, outboxRepo } from '@/db/repos';
 import { useCart } from '@/features/billing/cart-store';
+import { pendingClaim } from '@/features/customer-bills/pending-claim';
 import { stopSync } from '@/sync/scheduler';
 
 import { signOutOnServer } from './auth-api';
@@ -32,6 +33,7 @@ export function signOut(): void {
   useSession.getState().signOut();
   if (Platform.OS !== 'web') clearLocalData(db);
   useCart.getState().clear();
+  pendingClaim.clear();
   queryClient.clear();
   void signOutOfGoogle();
   if (token) void signOutOnServer(token);

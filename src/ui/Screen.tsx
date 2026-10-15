@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 type ScreenProps = {
@@ -15,6 +15,9 @@ type ScreenProps = {
   scroll?: boolean;
 };
 
+// The customer pages in a desktop browser: a phone-width column in the middle, like the app.
+const column = Platform.OS === 'web';
+
 /** Stone background, 20 side padding, no app-wide header bar (DESIGN.md · Layout). */
 export function Screen({
   children,
@@ -28,7 +31,11 @@ export function Screen({
   const body = scroll ? (
     <ScrollView
       style={styles.flex}
-      contentContainerStyle={[styles.content, !footer && bottomSafe && styles.contentBottomSafe]}
+      contentContainerStyle={[
+        styles.content,
+        !footer && bottomSafe && styles.contentBottomSafe,
+        column && styles.column,
+      ]}
       keyboardShouldPersistTaps="handled"
       // Number pads have no Done key: dragging the screen puts the keyboard away.
       keyboardDismissMode="on-drag"
@@ -37,12 +44,16 @@ export function Screen({
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.flex, styles.content]}>{children}</View>
+    <View style={[styles.flex, styles.content, column && styles.column]}>{children}</View>
   );
 
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.screen}>
-      {header ? <View style={styles.header}>{header}</View> : <View style={styles.topInset} />}
+      {header ? (
+        <View style={[styles.header, column && styles.column]}>{header}</View>
+      ) : (
+        <View style={styles.topInset} />
+      )}
       {body}
       {footer ? (
         <View
@@ -50,6 +61,7 @@ export function Screen({
             styles.footer,
             footerStyle === 'bar' && styles.footerBar,
             bottomSafe && styles.footerBottomSafe,
+            column && styles.column,
           ]}
         >
           {footer}
@@ -90,4 +102,5 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderTopColor: theme.colors.outline,
   },
   footerBottomSafe: { paddingBottom: rt.insets.bottom + theme.space.sm },
+  column: { width: '100%', maxWidth: 560, alignSelf: 'center' },
 }));

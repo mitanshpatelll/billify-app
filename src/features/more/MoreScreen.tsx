@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import {
   ChartColumn,
   ChevronRight,
+  CircleHelp,
   LogOut,
   ReceiptText,
   RefreshCw,
@@ -15,11 +16,13 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { isApiError } from '@/api/client';
 import { deleteAccount } from '@/features/auth/delete-account';
+import { useShopQueries } from '@/features/customer-bills/api';
 import { signOut, unsyncedChanges } from '@/features/auth/sign-out';
 import { useSession } from '@/features/auth/session-store';
 import { useShop } from '@/features/shop/shop';
 import { useSyncBadge } from '@/features/sync/sync';
 import {
+  Badge,
   ErrorBanner,
   Icon,
   LargeTitle,
@@ -53,6 +56,11 @@ export function MoreScreen() {
   const shop = useShop();
   const user = useSession((state) => state.user);
   const sync = useSyncBadge();
+  // Online: the count shows when the phone can reach the server, nothing otherwise (not the
+  // last count from before it went offline).
+  const queries = useShopQueries('open');
+  const openQueries = (!queries.isError && queries.data?.queries) || [];
+  const unreadQueries = openQueries.filter((query) => query.unread).length;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleting = useRef(false);
 
@@ -135,6 +143,23 @@ export function MoreScreen() {
       </TileRow>
 
       <ListGroup>
+        <ListRow
+          title="Bill queries"
+          subtitle={
+            openQueries.length
+              ? `${openQueries.length} open${unreadQueries ? `, ${unreadQueries} new` : ''}`
+              : 'Questions customers raised on their bills'
+          }
+          leading={<Icon icon={CircleHelp} />}
+          trailing={
+            unreadQueries ? (
+              <Badge label={`${unreadQueries} new`} dot />
+            ) : (
+              <Icon icon={ChevronRight} color="iconInactive" />
+            )
+          }
+          onPress={() => router.push('/shop/queries')}
+        />
         <ListRow
           title="Sync"
           subtitle="Bills reach the server by themselves"

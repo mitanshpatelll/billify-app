@@ -1,6 +1,7 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Banknote,
+  BadgeCheck,
   BookOpen,
   CircleCheck,
   MessageCircle,
@@ -8,17 +9,20 @@ import {
   Phone,
   ReceiptText,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { isApiError } from '@/api/client';
 import { isRepoError } from '@/db/repos';
+import { unlinkCustomer } from '@/features/customer-bills/api';
 import { formatPhone, maskPhone, useCustomer } from '@/features/customers/customers';
 import { khataReminderText, whatsAppLink } from '@/features/sharing/links';
 import { useShop } from '@/features/shop/shop';
 import { formatRupees, parseRupees } from '@/lib/money';
 import { normalizePhone } from '@/lib/phone';
 import type { SettlementMethod } from '@/lib/domain';
+import { requestSync } from '@/sync/scheduler';
 import {
   Avatar,
   Button,
@@ -55,6 +59,10 @@ export function CustomerKhataScreen() {
   const { balancePaise, entries } = useCustomerKhata(id);
   const [mode, setMode] = useState<Mode>('view');
   const [error, setError] = useState<string | null>(null);
+  // Unlinked online just now; the phone's copy catches up on the next pull.
+  const [unlinked, setUnlinked] = useState(false);
+  // A claim or unlink happens on the server: opening the page asks for a pull to show it.
+  useFocusEffect(useCallback(() => requestSync(), []));
 
   if (!customer || customer.deletedAt) {
     return (
@@ -98,6 +106,37 @@ export function CustomerKhataScreen() {
     ]);
   }
 
+  function confirmUnlink() {
+    if (!customer) return;
+    Alert.alert(
+      'Unlink from Billify?',
+      `The account that saved ${customer.name}'s bills stops seeing them and this khata. Do this if it isn't ${customer.name}. They can save a bill again later.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unlink',
+          style: 'destructive',
+          onPress: () => {
+            setError(null);
+            unlinkCustomer(customer.id)
+              .then(() => {
+                setUnlinked(true);
+                requestSync({ force: true });
+              })
+              .catch((err: unknown) =>
+                setError(
+                  isApiError(err, 'NETWORK_ERROR') || isApiError(err, 'TIMEOUT')
+                    ? 'No internet connection. Unlinking needs the internet.'
+                    : 'Couldn’t unlink. Try again in a minute.',
+                ),
+              );
+          },
+        },
+      ],
+    );
+  }
+
+  const linked = !!customer.linkedUserId && !unlinked;
   const due = balancePaise > 0;
   const since = entries.at(-1)?.createdAt;
   const balanceTile: TileVariant = due ? 'khata' : 'selected';
@@ -136,6 +175,21 @@ export function CustomerKhataScreen() {
           />
         </View>
       </Tile>
+
+      {linked ? (
+        <Tile>
+          <View style={styles.person}>
+            <Icon icon={BadgeCheck} color="primary" />
+            <View style={styles.flex}>
+              <Text variant="bodyStrong">On Billify</Text>
+              <Text variant="bodySecondary" tone="muted">
+                Saved to their Billify account: they see these bills and this khata.
+              </Text>
+            </View>
+            <TextButton label="Unlink" onPress={confirmUnlink} />
+          </View>
+        </Tile>
+      ) : null}
 
       <Tile variant={balanceTile}>
         <Text variant="label" tone={due ? 'khata' : 'primary'}>
