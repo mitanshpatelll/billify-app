@@ -8,10 +8,12 @@ import type { TableName } from './types';
 // 20 rows re-renders once, not 20 times.
 const versions = new Map<string, number>();
 const subscribers = new Set<() => void>();
+const tableListeners = new Map<string, Set<() => void>>();
 let scheduled = false;
 
 addDatabaseChangeListener(({ tableName }) => {
   versions.set(tableName, (versions.get(tableName) ?? 0) + 1);
+  tableListeners.get(tableName)?.forEach((listener) => listener());
   if (scheduled) return;
   scheduled = true;
   queueMicrotask(() => {
@@ -19,6 +21,16 @@ addDatabaseChangeListener(({ tableName }) => {
     subscribers.forEach((notify) => notify());
   });
 });
+
+/** Calls `listener` on every row change in `table` (the sync scheduler watches the outbox). */
+export function onTableChange(table: TableName, listener: () => void): () => void {
+  const listeners = tableListeners.get(table) ?? new Set();
+  listeners.add(listener);
+  tableListeners.set(table, listeners);
+  return () => {
+    listeners.delete(listener);
+  };
+}
 
 function subscribe(notify: () => void) {
   subscribers.add(notify);

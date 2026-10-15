@@ -38,16 +38,38 @@ export function ErrorBanner({ title, message, onDismiss }: BannerProps) {
 
 type StatusPillProps = {
   label: string;
-  tone?: 'ok' | 'waiting';
+  tone?: 'ok' | 'waiting' | 'attention';
+  onPress?: () => void;
 };
 
-/** White pill with a dot, e.g. sync state: "Synced" (neem) or "3 waiting" (stone). */
-export function StatusPill({ label, tone = 'ok' }: StatusPillProps) {
-  return (
-    <View style={styles.pill}>
-      <View style={[styles.dot, tone === 'waiting' && styles.dotWaiting]} />
+/**
+ * White pill with a dot, e.g. sync state: "Synced" (neem), "3 bills waiting" (stone),
+ * "Needs attention" (red: the server refused something, an error). Always words, not only colour.
+ */
+export function StatusPill({ label, tone = 'ok', onPress }: StatusPillProps) {
+  const content = (
+    <>
+      <View
+        style={[
+          styles.dot,
+          tone === 'waiting' && styles.dotWaiting,
+          tone === 'attention' && styles.dotAttention,
+        ]}
+      />
       <Text variant="label">{label}</Text>
-    </View>
+    </>
+  );
+  if (!onPress) return <View style={styles.pill}>{content}</View>;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. Sync details`}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -77,4 +99,6 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.primary,
   },
   dotWaiting: { backgroundColor: theme.colors.iconInactive },
+  dotAttention: { backgroundColor: theme.colors.error },
+  pillPressed: { backgroundColor: theme.colors.surfacePressed },
 }));

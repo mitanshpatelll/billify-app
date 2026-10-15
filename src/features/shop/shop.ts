@@ -28,7 +28,7 @@ export function storeShop(server: ServerShop, { setupDone }: { setupDone: boolea
  */
 export function prepareShopForOwner(server: ServerShop | null): void {
   if (server) storeShop(server, { setupDone: true });
-  else if (shopRepo.getShop(db)) clearLocalData(db);
+  else clearLocalData(db);
 }
 
 /** Last setup step done: flips the shop route guard, which opens the tabs by itself. */

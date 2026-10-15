@@ -18,7 +18,7 @@ export function BillQrSheet() {
   const url = billUrl(bill.publicToken);
 
   return (
-    <View style={styles.sheet}>
+    <View style={styles.sheet} collapsable={false}>
       <Text variant="titleScreen" align="center">
         Bill {bill.number}
       </Text>

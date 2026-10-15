@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { selectSignedIn, useSession } from '@/features/auth/session-store';
 import { useShop } from '@/features/shop/shop';
+import { useShopDataReady } from '@/features/sync/sync';
 import { EmptyState, Screen } from '@/ui';
 
 // Shop owner → billing (or setup first), customer → my bills, otherwise → welcome.
@@ -30,5 +31,7 @@ export default function Index() {
 
 function ShopRedirect() {
   const setupDone = useShop()?.setupDone ?? false;
-  return <Redirect href={setupDone ? '/shop/bill' : '/shop/setup'} />;
+  const dataReady = useShopDataReady();
+  if (!setupDone) return <Redirect href="/shop/setup" />;
+  return <Redirect href={dataReady ? '/shop/bill' : '/shop/restore'} />;
 }

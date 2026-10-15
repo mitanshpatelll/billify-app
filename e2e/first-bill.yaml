@@ -1,6 +1,6 @@
-# Flows 1 + 2 (User Flows): a new shop signs in and sets up, adds an unknown item while billing,
-# takes cash; the session and the bill survive an app restart; signing out and back in restores
-# the shop from the server. Needs the API with DEV_SIGN_IN=true (no Google in development).
+# Flows 1, 2 and 6 (User Flows): a new shop signs in and sets up, adds an unknown item while
+# billing, takes cash; the bill syncs; the session and the bill survive an app restart; signing
+# out and back in downloads the shop's data again. Needs the API with DEV_SIGN_IN=true.
 # Run: METRO_URL=http://localhost:8081 pnpm e2e e2e/first-bill.yaml
 appId: com.glitchover.billify.dev
 ---
@@ -67,6 +67,11 @@ appId: com.glitchover.billify.dev
 - tapOn: 'Start a new bill'
 - assertVisible: 'Bill A-002'
 
+# 6 Sync: the bill leaves the outbox by itself shortly after it is saved
+- extendedWaitUntil:
+    visible: 'Synced.*'
+    timeout: 30000
+
 # Restart: still signed in (SecureStore), shop + catalog + bill counter from SQLite
 - stopApp
 - runFlow: _open-app.yaml
@@ -76,10 +81,10 @@ appId: com.glitchover.billify.dev
 - assertVisible: 'Sugar.*₹44.00 / kg'
 - pressKey: Enter # closes the keyboard, which hides the tab bar
 
-# 16 More → sign out (warns: the bill hasn't synced yet) → sign in again → shop restored
+# 16 More → sign out (everything synced, so nothing is lost) → sign in again
 - tapOn: 'More, tab.*'
 - tapOn: 'Sign out.*'
-- assertVisible: '.*haven’t reached the server yet.*|.*hasn’t reached the server yet.*'
+- assertVisible: 'Your shop stays on the server.*'
 - tapOn: 'Sign out'
 - tapOn: 'I run a shop.*'
 - tapOn: 'Continue'
@@ -88,8 +93,14 @@ appId: com.glitchover.billify.dev
     index: 1
 - eraseText: 40
 - inputText: ${output.email}
-- pressKey: Enter # Return signs in (the keyboard covers the button)
+- pressKey: Enter
+
+# New phone path: the shop's data comes down before billing opens
 - extendedWaitUntil:
-    visible: 'Sharma Kirana'
-    timeout: 30000
-- assertVisible: 'Bill A-001' # the unsynced bill went with sign-out; sync brings bills back
+    visible: 'Bill A-002'
+    timeout: 60000
+- assertVisible: 'Sharma Kirana'
+- assertVisible: 'Synced.*'
+- tapOn: 'Search items'
+- inputText: 'sug'
+- assertVisible: 'Sugar.*₹44.00 / kg'

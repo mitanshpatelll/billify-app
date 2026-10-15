@@ -35,8 +35,9 @@ export function CustomerPickerSheet() {
   }
 
   const q = query.trim();
+  // collapsable={false}: see QuickAddSheet (form sheets want one wrapper, not its children).
   return (
-    <View style={styles.sheet}>
+    <View style={styles.sheet} collapsable={false}>
       <Text variant="titleScreen" accessibilityRole="header">
         Customer
       </Text>

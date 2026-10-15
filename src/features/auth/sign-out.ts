@@ -5,15 +5,20 @@ import { queryClient } from '@/api/query-client';
 import { db } from '@/db/client';
 import { clearLocalData, outboxRepo } from '@/db/repos';
 import { useCart } from '@/features/billing/cart-store';
+import { stopSync } from '@/sync/scheduler';
 
 import { signOutOnServer } from './auth-api';
 import { signOutOfGoogle } from './google';
 import { currentToken, useSession } from './session-store';
 
-/** Changes made on this phone that haven't reached the server yet (lost on sign-out). */
+/**
+ * Changes made on this phone that the server doesn't have (lost on sign-out): waiting ones, and
+ * ones the server refused that were never retried or removed.
+ */
 export function unsyncedChanges(): number {
   if (Platform.OS === 'web') return 0;
-  return outboxRepo.outboxCounts(db).pending;
+  const { pending, rejected } = outboxRepo.outboxCounts(db);
+  return pending + rejected;
 }
 
 /**
@@ -22,6 +27,8 @@ export function unsyncedChanges(): number {
  */
 export function signOut(): void {
   const token = currentToken();
+  // First: no sync answer still on its way may land in the phone about to be wiped.
+  stopSync();
   useSession.getState().signOut();
   if (Platform.OS !== 'web') clearLocalData(db);
   useCart.getState().clear();

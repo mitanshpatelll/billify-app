@@ -82,9 +82,11 @@ export function QuickAddSheet() {
     }
   }
 
+  // Form sheets want at most a header + one scroll view. Unistyles applies styles natively, so
+  // React would flatten these wrappers away and hand the sheet their children instead.
   return (
-    <View style={styles.sheet}>
-      <View style={styles.header}>
+    <View style={styles.sheet} collapsable={false}>
+      <View style={styles.header} collapsable={false}>
         <Text variant="titleScreen" style={styles.flex} accessibilityRole="header">
           New item
         </Text>

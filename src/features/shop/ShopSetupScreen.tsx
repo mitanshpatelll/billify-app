@@ -23,6 +23,8 @@ import {
   Tile,
 } from '@/ui';
 
+import { markShopDataReady } from '@/features/sync/sync';
+
 import { storeShop, useShop } from './shop';
 import { createMyShop, fetchMyShop } from './shop-api';
 
@@ -72,6 +74,8 @@ export function ShopSetupScreen() {
       {
         onSuccess: (shop) => {
           storeShop(shop, { setupDone: false });
+          // A shop made on this phone has nothing on the server to download.
+          markShopDataReady();
           router.push('/shop/setup/camera');
         },
       },

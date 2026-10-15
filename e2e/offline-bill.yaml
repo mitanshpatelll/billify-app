@@ -1,0 +1,15 @@
+# Flow 6 (User Flows), the offline half. Run after first-bill.yaml with the API stopped:
+# billing never waits for the network, and the badge says the bill is waiting.
+# Then start the API again and run e2e/wait-synced.yaml.
+appId: com.glitchover.billify.dev
+---
+- runFlow: _open-app.yaml
+- tapOn: 'Sugar' # quick key: loose items sold before
+- tapOn: 'Checkout'
+- tapOn: 'Cash, Collect at counter'
+- tapOn: 'Mark as paid'
+- assertVisible: 'Bill saved'
+- tapOn: 'Start a new bill'
+- extendedWaitUntil:
+    visible: 'Offline · 1 bill waiting.*'
+    timeout: 30000

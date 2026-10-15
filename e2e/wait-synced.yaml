@@ -1,0 +1,6 @@
+# Flow 6, the reconnect half: with the API back, the waiting bill syncs by itself (backoff retry).
+appId: com.glitchover.billify.dev
+---
+- extendedWaitUntil:
+    visible: 'Synced.*'
+    timeout: 120000

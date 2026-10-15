@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { useProductSearch, useQuickKeys, type Product } from '@/features/catalog/catalog';
 import { useShop } from '@/features/shop/shop';
+import { useSyncBadge } from '@/features/sync/sync';
 import { formatRupees } from '@/lib/money';
 import { formatQty, perUnit } from '@/lib/units';
 import {
@@ -36,6 +37,7 @@ export function BillingScreen() {
   const { lines, lastAddedId, add, increment, decrement, clear } = useCart();
   const [query, setQuery] = useState('');
   const results = useProductSearch(query);
+  const sync = useSyncBadge();
 
   const total = cartTotalPaise(lines);
 
@@ -80,8 +82,7 @@ export function BillingScreen() {
             Bill {billNumber}
           </Text>
         </View>
-        {/* Sync slice: outbox count, "Synced" when it is 0, else "3 waiting". */}
-        <StatusPill label="Synced" />
+        <StatusPill label={sync.label} tone={sync.tone} onPress={() => router.push('/shop/sync')} />
       </View>
 
       <ScannerPreview />
