@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { useShop } from '@/features/shop/shop-store';
+import { useShop } from '@/features/shop/shop';
 import { colors, radius } from '@/theme/tokens';
 
 const sheet = {
@@ -12,7 +12,7 @@ const sheet = {
 
 // Shop side: setup until it's done, then the tabs and the billing flow.
 export default function ShopLayout() {
-  const setupDone = useShop((state) => state.setupDone);
+  const setupDone = useShop()?.setupDone ?? false;
 
   return (
     <Stack

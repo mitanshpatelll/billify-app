@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
     "@tanstack/react-query": "^5.104.2",
+    "drizzle-orm": "0.45.4",
     "expo": "~57.0.28",
     "expo-constants": "~57.0.21",
     "expo-crypto": "~57.0.4",
@@ -13,6 +14,7 @@
     "expo-linking": "~57.0.12",
     "expo-router": "~57.0.26",
     "expo-splash-screen": "~57.0.10",
+    "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "lucide-react-native": "^1.55.0",
@@ -30,14 +32,22 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@types/jest": "29.5.14",
+    "@types/node": "^24.19.2",
     "@types/react": "~19.2.2",
+    "@types/sql.js": "^1.4.11",
+    "babel-plugin-inline-import": "^3.0.0",
     "babel-preset-expo": "~57.0.15",
+    "drizzle-kit": "0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.6",
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.10",
+    "sql.js": "^1.14.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -47,10 +57,27 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "e2e": "MAESTRO_CLI_NO_ANALYTICS=1 MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED=true maestro test",
+    "db:generate": "drizzle-kit generate",
     "api:types": "openapi-typescript ${API_DOCS_URL:-http://localhost:3000/docs/openapi.json} -o src/api/schema.d.ts",
     "format": "prettier --write .",
     "doctor": "pnpm dlx expo-doctor"
   },
   "private": true,
-  "packageManager": "pnpm@12.3.4"
+  "packageManager": "pnpm@12.3.4",
+  "jest": {
+    "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/jest.setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/ios/",
+      "/android/"
+    ]
+  }
 }

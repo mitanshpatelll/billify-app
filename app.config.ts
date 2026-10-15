@@ -40,10 +40,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-font',
+    // Shop data lives in SQLite on the phone (offline-first, D3).
+    'expo-sqlite',
     [
       'expo-splash-screen',
       { image: './assets/splash-icon.png', imageWidth: 96, backgroundColor: '#F1F3F0' },
     ],
+    // Quotes the iOS bundle phase so builds work from a path with spaces.
+    './plugins/with-quoted-bundle-phase',
   ],
   experiments: {
     typedRoutes: true,

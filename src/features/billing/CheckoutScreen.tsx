@@ -9,13 +9,14 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { findCustomer, formatPhone } from '@/features/customers/customers';
-import { formatBillNumber, useShop } from '@/features/shop/shop-store';
+import { isRepoError } from '@/db/repos';
+import { formatPhone, useCustomer } from '@/features/customers/customers';
+import { useShop } from '@/features/shop/shop';
 import { formatRupees, parseRupees } from '@/lib/money';
 import { upiPayLink } from '@/lib/upi';
 import { colors } from '@/theme/tokens';
@@ -24,6 +25,7 @@ import {
   Badge,
   Button,
   Chip,
+  ErrorBanner,
   Icon,
   Money,
   Screen,
@@ -35,8 +37,8 @@ import {
   TileRow,
 } from '@/ui';
 
-import { useBills, type Payment } from './bills-store';
-import { cartTotalPaise, useCart } from './cart-store';
+import { saveBill, useNextBillNumber, type NewPayment } from './bills';
+import { cartTotalPaise, toBillLines, useCart } from './cart-store';
 
 type Method = 'cash' | 'upi' | 'khata' | 'split';
 
@@ -49,23 +51,23 @@ const METHODS: { method: Method; title: string; subtitle: string; icon: LucideIc
 
 /** 02 Checkout: amount, customer, payment method. No gateway: the shop confirms the payment. */
 export function CheckoutScreen() {
-  const shop = useShop((state) => state.shop);
-  const nextBillNumber = useShop((state) => state.nextBillNumber);
-  const takeBillNumber = useShop((state) => state.takeBillNumber);
-  const { lines, customerId, clear } = useCart();
-  const saveBill = useBills((state) => state.saveBill);
+  const shop = useShop();
+  const { draftId, lines, customerId, clear } = useCart();
   const [method, setMethod] = useState<Method>('upi');
   const [cashInput, setCashInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  // A second tap before the screen closes must not save the bill again.
+  const saving = useRef(false);
 
   const total = cartTotalPaise(lines);
-  const customer = findCustomer(customerId);
-  const billNumber = formatBillNumber(shop?.billPrefix ?? 'A', nextBillNumber);
+  const customer = useCustomer(customerId);
+  const billNumber = useNextBillNumber(shop?.billPrefix ?? 'A');
   const splitCash = parseRupees(cashInput);
   const splitOk = splitCash !== null && splitCash > 0 && splitCash < total;
   const upiAmount = method === 'split' && splitOk ? total - splitCash : total;
   const canSave = method === 'khata' ? !!customer : method === 'split' ? splitOk : true;
 
-  function payments(): Payment[] {
+  function payments(): NewPayment[] {
     if (method === 'split' && splitCash !== null) {
       return [
         { method: 'cash', amountPaise: splitCash },
@@ -76,15 +78,26 @@ export function CheckoutScreen() {
   }
 
   function markAsPaid() {
-    // Billing slice: one SQLite transaction (bill, items, payments, stock, khata + outbox).
-    const bill = saveBill({
-      number: takeBillNumber(),
-      customerId,
-      items: lines,
-      payments: payments(),
-    });
-    clear();
-    router.replace({ pathname: '/shop/bill-saved', params: { id: bill.id } });
+    if (!shop || saving.current) return;
+    saving.current = true;
+    setError(null);
+    try {
+      // One SQLite transaction: bill, lines, payments, stock, khata + outbox. No network.
+      // The draft id makes it idempotent: a draft already saved returns that bill.
+      const bill = saveBill({
+        id: draftId,
+        billPrefix: shop.billPrefix,
+        customerId: customer?.id ?? null,
+        lines: toBillLines(lines),
+        payments: payments(),
+      });
+      clear();
+      router.replace({ pathname: '/shop/bill-saved', params: { id: bill.id } });
+    } catch (err) {
+      saving.current = false;
+      if (!isRepoError(err)) throw err;
+      setError(err.message);
+    }
   }
 
   if (lines.length === 0) {
@@ -115,6 +128,10 @@ export function CheckoutScreen() {
         />
       }
     >
+      {error ? (
+        <ErrorBanner title="Bill not saved" message={error} onDismiss={() => setError(null)} />
+      ) : null}
+
       <Tile>
         <View style={styles.amountTop}>
           <Text variant="label" tone="muted">

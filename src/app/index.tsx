@@ -3,18 +3,17 @@ import { Smartphone } from 'lucide-react-native';
 import { Platform } from 'react-native';
 
 import { useSession } from '@/features/auth/session-store';
-import { useShop } from '@/features/shop/shop-store';
+import { useShop } from '@/features/shop/shop';
 import { EmptyState, Screen } from '@/ui';
 
 // Shop owner → billing (or setup first), customer → my bills, otherwise → welcome.
 export default function Index() {
   const signedIn = useSession((state) => state.signedIn);
   const role = useSession((state) => state.role);
-  const setupDone = useShop((state) => state.setupDone);
 
   if (!signedIn) return <Redirect href="/welcome" />;
   if (role === 'customer') return <Redirect href="/me/bills" />;
-  // Shop routes don't exist on the web (D5).
+  // Shop routes don't exist on the web (D5), and neither does SQLite.
   if (Platform.OS === 'web') {
     return (
       <Screen>
@@ -26,5 +25,10 @@ export default function Index() {
       </Screen>
     );
   }
+  return <ShopRedirect />;
+}
+
+function ShopRedirect() {
+  const setupDone = useShop()?.setupDone ?? false;
   return <Redirect href={setupDone ? '/shop/bill' : '/shop/setup'} />;
 }

@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { ScannerPreview } from '@/features/billing/components/ScannerPreview';
 import { Badge, Button, Icon, ListGroup, Screen, StackHeader, Text } from '@/ui';
 
-import { useShop } from './shop-store';
+import { finishSetup } from './shop';
 
 const POINTS: { icon: LucideIcon; title: string; subtitle: string }[] = [
   {
@@ -27,8 +27,6 @@ const POINTS: { icon: LucideIcon; title: string; subtitle: string }[] = [
 
 /** 10 Camera permission: last setup step. Allow → billing with the scanner; Not now → search only. */
 export function CameraPermissionScreen() {
-  const finishSetup = useShop((state) => state.finishSetup);
-
   // Finishing setup flips the shop route guard, which opens the tabs by itself.
   // Billing slice: Allow calls Camera.requestCameraPermission() from vision-camera first,
   // and "denied twice" shows an Open settings button (Linking.openSettings()).

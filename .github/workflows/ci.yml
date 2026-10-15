@@ -18,4 +18,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      # Tests join here once jest-expo is added in the first MVP slice.
+      - run: pnpm test --ci

@@ -7,6 +7,7 @@ module.exports = defineConfig([
   expoConfig,
   eslintPluginPrettierRecommended,
   {
-    ignores: ['dist/*', '.expo/*', 'expo-env.d.ts'],
+    // src/db/migrations is drizzle-kit output.
+    ignores: ['dist/*', '.expo/*', 'expo-env.d.ts', 'src/db/migrations/*'],
   },
 ]);

@@ -5,7 +5,9 @@
     "noUncheckedIndexedAccess": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    // TypeScript 6 includes no @types packages by default. Node types are referenced per test file.
+    "types": ["jest"]
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

@@ -1,26 +1,25 @@
-import { newId } from '@/lib/ids';
+import { db } from '@/db/client';
+import { useDbQuery } from '@/db/live';
+import { customersRepo } from '@/db/repos';
+import type { NewCustomer } from '@/db/repos/customers';
+import type { CustomerRow } from '@/db/schema';
 
-export type Customer = {
-  id: string;
-  name: string;
-  /** 10-digit Indian mobile number, no +91. */
-  phone: string | null;
-};
+export type Customer = CustomerRow;
+export { formatPhone, maskPhone } from '@/lib/phone';
 
-// Sample shop data for the UI pass. Replaced by customersRepo (SQLite) in the khata slice.
-export const SAMPLE_CUSTOMERS: Customer[] = [
-  { id: newId(), name: 'Ramesh Yadav', phone: '9876504521' },
-  { id: newId(), name: 'Sunita Devi', phone: '9812207734' },
-  { id: newId(), name: 'Mohd. Arif', phone: '9900112233' },
-  { id: newId(), name: 'Priya Shah', phone: '9823456710' },
-  { id: newId(), name: 'Gopal Verma', phone: null },
-];
-
-export function findCustomer(id: string | null): Customer | null {
-  return SAMPLE_CUSTOMERS.find((customer) => customer.id === id) ?? null;
+export function useCustomers(query: string): Customer[] {
+  return useDbQuery(['customers'], () => customersRepo.searchCustomers(db, query), [query]);
 }
 
-/** "+91 98765 04521" */
-export function formatPhone(phone: string): string {
-  return `+91 ${phone.slice(0, 5)} ${phone.slice(5)}`;
+export function useCustomer(id: string | null | undefined): Customer | null {
+  return useDbQuery(
+    ['customers'],
+    () => (id ? (customersRepo.getCustomer(db, id) ?? null) : null),
+    [id],
+  );
+}
+
+/** Saves a new customer. Throws RepoError (INVALID_NAME, INVALID_PHONE). */
+export function addCustomer(input: NewCustomer): Customer {
+  return customersRepo.createCustomer(db, input);
 }

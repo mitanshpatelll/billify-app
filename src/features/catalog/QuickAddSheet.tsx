@@ -1,22 +1,32 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Barcode, Plus, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { isRepoError } from '@/db/repos';
 import { useCart } from '@/features/billing/cart-store';
 import { parseRupees } from '@/lib/money';
-import { UNITS, type Unit } from '@/lib/units';
-import { Button, Icon, IconButton, SegmentedControl, Text, TextField, Tile, Toggle } from '@/ui';
+import { parseQty, UNITS, type Unit } from '@/lib/units';
+import {
+  Button,
+  ErrorBanner,
+  Icon,
+  IconButton,
+  SegmentedControl,
+  Text,
+  TextField,
+  Tile,
+  Toggle,
+} from '@/ui';
 
-import { useCatalog } from './catalog-store';
+import { addProduct } from './catalog';
 
 const UNIT_OPTIONS = UNITS.map((unit) => ({ value: unit, label: unit }));
 
 /** 11 Quick add item: an unknown barcode (or a name search miss) becomes a product, then a cart line. */
 export function QuickAddSheet() {
   const params = useLocalSearchParams<{ barcode?: string; name?: string }>();
-  const addProduct = useCatalog((state) => state.addProduct);
   const addToCart = useCart((state) => state.add);
 
   const [name, setName] = useState(params.name ?? '');
@@ -26,6 +36,8 @@ export function QuickAddSheet() {
   const [trackStock, setTrackStock] = useState(true);
   const [openingStock, setOpeningStock] = useState('');
   const [touched, setTouched] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saving = useRef(false);
 
   const pricePaise = parseRupees(price);
   const mrpPaise = mrp.trim() ? parseRupees(mrp) : null;
@@ -40,23 +52,34 @@ export function QuickAddSheet() {
           ? "Price can't be above MRP"
           : undefined,
   };
-  const valid = !errors.name && !errors.price && !errors.mrp;
+  const openingQty = openingStock.trim() ? parseQty(openingStock) : 0;
+  const openingError =
+    trackStock && openingQty === null ? 'Enter a number, like 12 or 2.5' : undefined;
+  const valid = !errors.name && !errors.price && !errors.mrp && !openingError;
 
   function save() {
     setTouched(true);
-    if (!valid || !pricePaise) return;
-    // Billing slice: one SQLite transaction (products + opening stock movement + outbox rows).
-    const product = addProduct({
-      barcode: params.barcode ?? null,
-      name: name.trim(),
-      unit,
-      pricePaise,
-      mrpPaise,
-      trackStock,
-      openingStock: trackStock ? Number(openingStock) || 0 : undefined,
-    });
-    addToCart(product);
-    router.back();
+    if (!valid || !pricePaise || saving.current) return;
+    saving.current = true;
+    setSaveError(null);
+    try {
+      // One SQLite transaction: product + opening stock movement + outbox entries.
+      const product = addProduct({
+        barcode: params.barcode ?? null,
+        name: name.trim(),
+        unit,
+        pricePaise,
+        mrpPaise,
+        trackStock,
+        openingStock: trackStock ? (openingQty ?? 0) : undefined,
+      });
+      addToCart(product);
+      router.back();
+    } catch (err) {
+      saving.current = false;
+      if (!isRepoError(err)) throw err;
+      setSaveError(err.message);
+    }
   }
 
   return (
@@ -85,6 +108,14 @@ export function QuickAddSheet() {
               {params.barcode}
             </Text>
           </View>
+        ) : null}
+
+        {saveError ? (
+          <ErrorBanner
+            title="Item not saved"
+            message={saveError}
+            onDismiss={() => setSaveError(null)}
+          />
         ) : null}
 
         <Tile>
@@ -154,6 +185,7 @@ export function QuickAddSheet() {
                 onChangeText={setOpeningStock}
                 placeholder="0"
                 keyboardType="decimal-pad"
+                error={touched ? openingError : undefined}
               />
             ) : null}
           </View>

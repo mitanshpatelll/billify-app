@@ -1,0 +1,20 @@
+# Opens the development build on the Metro server given in METRO_URL (default: local Metro).
+# Release builds start the JS bundle on their own, so flows can switch this for launchApp.
+appId: com.glitchover.billify.dev
+---
+- openLink: exp+billify://expo-development-client/?url=${METRO_URL || 'http://localhost:8081'}
+# Expo's dev menu opens on the first launch of a development build: sometimes with an intro
+# sheet first, sometimes straight away.
+- runFlow:
+    when:
+      visible: 'This is the developer menu.*'
+    commands:
+      - tapOn: 'Continue'
+- runFlow:
+    when:
+      visible: 'Runtime version.*'
+    commands:
+      - tapOn: 'Close'
+- extendedWaitUntil:
+    visible: 'How will you use Billify\?|Set up your shop|Bill [A-Z]+-\d+'
+    timeout: 60000

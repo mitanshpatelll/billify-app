@@ -290,6 +290,7 @@ export interface paths {
                       pricePaise: number;
                       mrpPaise: number | null;
                       lowStockAt: number | null;
+                      trackStock: boolean;
                     };
                   }
                 | {

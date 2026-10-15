@@ -7,12 +7,12 @@ import { billUrl } from '@/features/sharing/links';
 import { colors } from '@/theme/tokens';
 import { Money, Text } from '@/ui';
 
-import { useBills } from './bills-store';
+import { useBill } from './bills';
 
 /** Bill QR, shown to the customer at the counter. Opens the public bill page (21). */
 export function BillQrSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const bill = useBills((state) => state.bills.find((saved) => saved.id === id));
+  const bill = useBill(id);
 
   if (!bill) return null;
   const url = billUrl(bill.publicToken);

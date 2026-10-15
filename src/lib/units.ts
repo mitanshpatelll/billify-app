@@ -22,6 +22,13 @@ export function firstQty(unit: Unit): number {
   return unit === 'g' ? 100 : 1;
 }
 
+/** Parses a typed quantity ("12", "2.5", "0.25"); null if it isn't one. Up to 3 decimals. */
+export function parseQty(input: string): number | null {
+  const cleaned = input.trim();
+  if (!/^\d+(\.\d{0,3})?$/.test(cleaned)) return null;
+  return Number(cleaned);
+}
+
 /** How much one stepper tap changes the quantity. */
 export function qtyStep(unit: Unit): number {
   if (unit === 'kg' || unit === 'litre') return 0.5;

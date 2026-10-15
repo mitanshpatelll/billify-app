@@ -4,17 +4,15 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { BILL_PREFIX_PATTERN, formatBillNumber } from '@/lib/bill-number';
 import { UPI_ID_PATTERN } from '@/lib/upi';
 import { Badge, Button, Icon, LargeTitle, Screen, StackHeader, Text, TextField, Tile } from '@/ui';
 
-import { formatBillNumber, useShop } from './shop-store';
-
-const PREFIX_PATTERN = /^[A-Z]{1,3}$/;
+import { saveShopDetails, useShop } from './shop';
 
 /** 09 Shop setup: shop name, UPI id, bill prefix. The only step that needs the internet. */
 export function ShopSetupScreen() {
-  const saved = useShop((state) => state.shop);
-  const saveShop = useShop((state) => state.saveShop);
+  const saved = useShop();
   const [name, setName] = useState(saved?.name ?? '');
   const [upiId, setUpiId] = useState(saved?.upiId ?? '');
   const [prefix, setPrefix] = useState(saved?.billPrefix ?? 'A');
@@ -22,15 +20,15 @@ export function ShopSetupScreen() {
 
   const nameOk = name.trim().length >= 2;
   const upiOk = UPI_ID_PATTERN.test(upiId.trim());
-  const prefixOk = PREFIX_PATTERN.test(prefix);
+  const prefixOk = BILL_PREFIX_PATTERN.test(prefix);
   const valid = nameOk && upiOk && prefixOk;
   const sampleNumber = formatBillNumber(prefixOk ? prefix : 'A', 1);
 
   function next() {
     setTouched(true);
     if (!valid) return;
-    // Slice 1: POST /v1/shops (201, or 409 SHOP_EXISTS → load it), then the first sync pull.
-    saveShop({ name: name.trim(), upiId: upiId.trim().toLowerCase(), billPrefix: prefix });
+    // Auth slice: POST /v1/shops (201, or 409 SHOP_EXISTS → load it), then the first sync pull.
+    saveShopDetails({ name: name.trim(), upiId: upiId.trim().toLowerCase(), billPrefix: prefix });
     router.push('/shop/setup/camera');
   }
 

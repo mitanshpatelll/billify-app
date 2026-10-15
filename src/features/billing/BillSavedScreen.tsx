@@ -3,10 +3,10 @@ import { Check, Plus, QrCode, Share2, type LucideIcon } from 'lucide-react-nativ
 import { Linking, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { findCustomer } from '@/features/customers/customers';
+import { useCustomer } from '@/features/customers/customers';
 import { billShareText, whatsAppLink } from '@/features/sharing/links';
-import { useShop } from '@/features/shop/shop-store';
-import { formatRupees } from '@/lib/money';
+import { useShop } from '@/features/shop/shop';
+import { formatRupees, lineTotalPaise } from '@/lib/money';
 import { formatQty } from '@/lib/units';
 import {
   Badge,
@@ -21,16 +21,16 @@ import {
   type TileVariant,
 } from '@/ui';
 
-import { paymentLabel, useBills } from './bills-store';
-import { lineTotalPaise } from './cart-store';
+import { paymentLabel, useBill } from './bills';
 
 const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' });
 
 /** 03 Bill saved: summary, then share on WhatsApp or show the bill QR. */
 export function BillSavedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const bill = useBills((state) => state.bills.find((saved) => saved.id === id));
-  const shop = useShop((state) => state.shop);
+  const bill = useBill(id);
+  const shop = useShop();
+  const customer = useCustomer(bill?.customerId);
 
   const newBill = () => router.dismissTo('/shop/bill');
 
@@ -44,7 +44,6 @@ export function BillSavedScreen() {
     );
   }
 
-  const customer = findCustomer(bill.customerId);
   const method = paymentLabel(bill.payments);
   const meta = [bill.number, timeFormat.format(new Date(bill.createdAt)), customer?.name]
     .filter(Boolean)
@@ -101,16 +100,16 @@ export function BillSavedScreen() {
         </View>
         <View style={styles.items}>
           {bill.items.map((item) => (
-            <View key={item.productId} style={styles.item}>
+            <View key={item.id} style={styles.item}>
               <View style={styles.flex}>
                 <Text variant="body" numberOfLines={1}>
-                  {item.name}
+                  {item.nameSnapshot}
                 </Text>
                 <Text variant="caption" tone="muted">
                   {formatQty(item.qty, item.unit)} × {formatRupees(item.unitPricePaise)}
                 </Text>
               </View>
-              <Money paise={lineTotalPaise(item)} variant="body" />
+              <Money paise={lineTotalPaise(item.qty, item.unitPricePaise)} variant="body" />
             </View>
           ))}
         </View>

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { searchProducts, useCatalog, type Product } from '@/features/catalog/catalog-store';
-import { formatBillNumber, useShop } from '@/features/shop/shop-store';
+import { useProductSearch, useQuickKeys, type Product } from '@/features/catalog/catalog';
+import { useShop } from '@/features/shop/shop';
 import { formatRupees } from '@/lib/money';
 import { formatQty, perUnit } from '@/lib/units';
 import {
@@ -24,20 +24,20 @@ import {
   Tile,
 } from '@/ui';
 
+import { useNextBillNumber } from './bills';
 import { cartTotalPaise, lineTotalPaise, useCart } from './cart-store';
 import { ScannerPreview } from './components/ScannerPreview';
 
 /** 01 Billing: scan / search / quick keys → cart → checkout. Never waits for the network. */
 export function BillingScreen() {
-  const shop = useShop((state) => state.shop);
-  const nextBillNumber = useShop((state) => state.nextBillNumber);
-  const products = useCatalog((state) => state.products);
+  const shop = useShop();
+  const billNumber = useNextBillNumber(shop?.billPrefix ?? 'A');
+  const quickKeys = useQuickKeys();
   const { lines, lastAddedId, add, increment, decrement, clear } = useCart();
   const [query, setQuery] = useState('');
+  const results = useProductSearch(query);
 
   const total = cartTotalPaise(lines);
-  const quickKeys = products.filter((product) => product.quickKey);
-  const results = searchProducts(products, query);
 
   function addProduct(product: Product) {
     add(product);
@@ -77,7 +77,7 @@ export function BillingScreen() {
             {shop?.name ?? 'Billify'}
           </Text>
           <Text variant="bodySecondary" tone="muted">
-            Bill {formatBillNumber(shop?.billPrefix ?? 'A', nextBillNumber)}
+            Bill {billNumber}
           </Text>
         </View>
         {/* Sync slice: outbox count, "Synced" when it is 0, else "3 waiting". */}
