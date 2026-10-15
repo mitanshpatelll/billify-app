@@ -13,6 +13,9 @@ const REASONS: Record<string, string> = {
   BILL_ALREADY_VOIDED: 'This bill was already cancelled',
   ID_CONFLICT: 'Another shop already has this record',
   INVALID_DATA: 'Some of its details are not valid',
+  KHATA_NEEDS_CUSTOMER: 'Khata needs a customer on the bill',
+  BILL_NOT_VOIDED: 'The bill it reverses isn’t cancelled on the server',
+  ALREADY_REVERSED: 'This cancelled bill was already put back (another phone did it)',
 };
 
 export function reasonText(entry: Pick<OutboxRow, 'reason' | 'message'>): string {

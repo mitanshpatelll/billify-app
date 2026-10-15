@@ -1,16 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check, Plus, QrCode, Share2, type LucideIcon } from 'lucide-react-native';
-import { Linking, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { useCustomer } from '@/features/customers/customers';
-import { billShareText, whatsAppLink } from '@/features/sharing/links';
 import { useShop } from '@/features/shop/shop';
 import { formatRupees, lineTotalPaise } from '@/lib/money';
 import { formatQty } from '@/lib/units';
 import {
   Badge,
   Button,
+  ErrorBanner,
   Icon,
   Money,
   Screen,
@@ -22,6 +23,7 @@ import {
 } from '@/ui';
 
 import { paymentLabel, useBill } from './bills';
+import { shareBillOnWhatsApp } from './share';
 
 const timeFormat = new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit' });
 
@@ -31,6 +33,7 @@ export function BillSavedScreen() {
   const bill = useBill(id);
   const shop = useShop();
   const customer = useCustomer(bill?.customerId);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const newBill = () => router.dismissTo('/shop/bill');
 
@@ -50,14 +53,7 @@ export function BillSavedScreen() {
     .join(' · ');
 
   function shareOnWhatsApp() {
-    if (!bill) return;
-    const text = billShareText({
-      shopName: shop?.name ?? 'Billify',
-      billNumber: bill.number,
-      totalPaise: bill.totalPaise,
-      publicToken: bill.publicToken,
-    });
-    void Linking.openURL(whatsAppLink(text, customer?.phone));
+    if (bill) shareBillOnWhatsApp(bill, customer, shop, setShareError);
   }
 
   return (
@@ -121,6 +117,14 @@ export function BillSavedScreen() {
           <Money paise={bill.totalPaise} variant="total" />
         </View>
       </Tile>
+
+      {shareError ? (
+        <ErrorBanner
+          title="Not shared"
+          message={shareError}
+          onDismiss={() => setShareError(null)}
+        />
+      ) : null}
 
       <TileRow>
         <ShareTile

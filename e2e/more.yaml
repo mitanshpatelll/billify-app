@@ -1,0 +1,62 @@
+# Flow 5 (User Flows) and the More tab: two bills, today's numbers, the bill list, cancelling a
+# bill (stock and totals put back), and editing the shop on the server.
+appId: com.glitchover.billify.dev
+---
+- runFlow: _new-shop.yaml
+
+# Bill 1: Maggi, cash
+- tapOn: 'Search items'
+- inputText: 'Maggi'
+- tapOn: 'No item called "Maggi".*'
+- tapOn:
+    text: 'Selling price'
+    index: 1
+- inputText: '14'
+- tapOn: 'New item'
+- tapOn: 'Add to bill'
+- tapOn: 'Checkout'
+- tapOn: 'Cash, Collect at counter'
+- tapOn: 'Mark as paid'
+- tapOn: 'Start a new bill'
+- assertVisible: 'Bill A-002'
+
+# Bill 2: Maggi again, UPI
+- tapOn: 'Search items'
+- inputText: 'mag'
+- tapOn: 'Maggi.*₹14.00 each'
+- tapOn: 'Checkout'
+- tapOn: 'Mark as paid'
+- tapOn: 'Start a new bill'
+- assertVisible: 'Bill A-003'
+
+# 05 Today
+- tapOn: 'More, tab.*'
+- tapOn: 'Today, Sales and payments'
+- assertVisible: '₹28.00'
+- assertVisible: '2 bills.*'
+- assertVisible: 'Cash in the drawer from today: ₹14.00'
+- tapOn: 'Back'
+
+# 17 Bills → 18 Bill detail → cancel A-001
+- tapOn: 'Bills, History and search'
+- assertVisible: 'A-002.*'
+- tapOn: 'A-001.*'
+- tapOn: 'Cancel bill.*'
+- tapOn: 'Cancel bill' # in the confirmation
+- assertVisible: 'This bill was cancelled.*'
+- tapOn: 'Back'
+- assertVisible: '.*A-001.*Cancelled.*'
+- tapOn: 'Back'
+- tapOn: 'Today, Sales and payments'
+- assertVisible: '1 bill · average ₹14.00 · 1 cancelled'
+- tapOn: 'Back'
+
+# Edit shop (PATCH /v1/shops/me)
+- tapOn: 'Sharma Kirana. Edit shop'
+- tapOn:
+    text: 'Shop name'
+    index: 1
+- eraseText: 30
+- inputText: 'Sharma General Store'
+- tapOn: 'Save'
+- assertVisible: 'Sharma General Store. Edit shop'

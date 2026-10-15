@@ -4,6 +4,7 @@ export * as khataRepo from './khata';
 export * as productsRepo from './products';
 export * as shopRepo from './shop';
 export * as stockRepo from './stock';
+export * as summaryRepo from './summary';
 export * as syncRepo from './sync';
 export * as outboxRepo from './outbox';
 export { isRepoError, RepoError } from './errors';

@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   Banknote,
   BookOpen,
@@ -235,6 +235,11 @@ function HistoryRow({ entry }: { entry: KhataLine }) {
     <ListRow
       title={title}
       subtitle={subtitle}
+      onPress={
+        entry.kind === 'credit_sale' && entry.refId
+          ? () => router.push({ pathname: '/shop/bills/[id]', params: { id: entry.refId! } })
+          : undefined
+      }
       trailing={
         <Text variant="bodyStrong" tone={plus ? 'khata' : 'primary'} style={styles.tabular}>
           {plus ? '+' : '−'}

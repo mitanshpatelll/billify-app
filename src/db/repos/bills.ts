@@ -1,4 +1,17 @@
-import { and, asc, eq, inArray, like, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  inArray,
+  isNull,
+  like,
+  lt,
+  or,
+  sql,
+} from 'drizzle-orm';
 
 import { formatBillNumber } from '@/lib/bill-number';
 import { MAX_PAISE, MAX_QTY, roundQty } from '@/lib/domain';
@@ -10,8 +23,11 @@ import type { Unit } from '@/lib/units';
 import {
   billItems,
   bills,
+  customers,
+  khataEntries,
   payments,
   products,
+  stockMovements,
   type BillItemRow,
   type BillRow,
   type PaymentRow,
@@ -20,6 +36,7 @@ import type { Db } from '../types';
 import { getCustomer } from './customers';
 import { RepoError } from './errors';
 import { insertKhataEntry } from './khata';
+import { containsPattern } from './like';
 import { enqueue, insertData } from './outbox';
 import { insertStockMovement } from './stock';
 
@@ -203,4 +220,124 @@ export function getBill(db: Db, id: string): SavedBill | undefined {
       .orderBy(asc(payments.method))
       .all(),
   };
+}
+
+// ------------------------------------------------------------------ history (17) and cancel (18)
+
+export type BillListRow = BillRow & {
+  customerName: string | null;
+  /** "cash", "upi", "khata" joined with "+" in a fixed order: "cash+upi". */
+  methods: string;
+  items: number;
+};
+
+export type BillRange = { from?: Date; to?: Date };
+
+/** 17 Bills: newest first, cancelled ones included; search by bill number or customer name. */
+export function listBills(
+  db: Db,
+  { from, to, query = '', limit = 200 }: BillRange & { query?: string; limit?: number } = {},
+): BillListRow[] {
+  const q = query.trim();
+  return db
+    .select({
+      ...getTableColumns(bills),
+      customerName: customers.name,
+      methods: sql<string>`coalesce((select group_concat(m, '+') from (select distinct ${payments.method} as m from ${payments} where ${payments.billId} = ${bills.id} order by case m when 'cash' then 0 when 'upi' then 1 else 2 end)), '')`,
+      items: sql<number>`(select count(*) from ${billItems} where ${billItems.billId} = ${bills.id})`,
+    })
+    .from(bills)
+    .leftJoin(customers, eq(customers.id, bills.customerId))
+    .where(
+      and(
+        from ? gte(bills.createdAt, from.toISOString()) : undefined,
+        to ? lt(bills.createdAt, to.toISOString()) : undefined,
+        q
+          ? or(
+              sql`${bills.number} like ${containsPattern(q)} escape '\\'`,
+              sql`${customers.name} like ${containsPattern(q)} escape '\\'`,
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(bills.createdAt))
+    .limit(limit)
+    .all();
+}
+
+/** The tile on 17 Bills: count and total of every matching bill (cancelled ones left out). */
+export function billTotals(
+  db: Db,
+  { from, to, query = '' }: BillRange & { query?: string } = {},
+): { bills: number; totalPaise: number } {
+  const q = query.trim();
+  const row = db
+    .select({
+      bills: sql<number>`count(*)`,
+      totalPaise: sql<number>`coalesce(sum(${bills.totalPaise}), 0)`,
+    })
+    .from(bills)
+    .leftJoin(customers, eq(customers.id, bills.customerId))
+    .where(
+      and(
+        isNull(bills.voidedAt),
+        from ? gte(bills.createdAt, from.toISOString()) : undefined,
+        to ? lt(bills.createdAt, to.toISOString()) : undefined,
+        q
+          ? or(
+              sql`${bills.number} like ${containsPattern(q)} escape '\\'`,
+              sql`${customers.name} like ${containsPattern(q)} escape '\\'`,
+            )
+          : undefined,
+      ),
+    )
+    .get();
+  return { bills: row?.bills ?? 0, totalPaise: row?.totalPaise ?? 0 };
+}
+
+/**
+ * 18 Bill detail → Cancel bill (Screen Flow 18): voided_at is set once, every item sold on it goes
+ * back on the shelf (a `void` movement), and a khata part comes off the customer's khata again (an
+ * `adjustment`). All in one transaction, the bill's update first in the outbox.
+ */
+export function voidBill(db: Db, id: string, now = new Date()): void {
+  db.transaction((tx) => {
+    const bill = tx.select().from(bills).where(eq(bills.id, id)).get();
+    if (!bill) throw new RepoError('BILL_NOT_FOUND', 'This bill isn’t on this phone');
+    if (bill.voidedAt) throw new RepoError('BILL_ALREADY_VOIDED', 'This bill is already cancelled');
+    const at = now.toISOString();
+    tx.update(bills).set({ voidedAt: at, updatedAt: at }).where(eq(bills.id, id)).run();
+    enqueue(tx, 'bills', 'update', { id, voidedAt: at }, at);
+
+    const sold = tx
+      .select()
+      .from(stockMovements)
+      .where(and(eq(stockMovements.refId, id), eq(stockMovements.reason, 'sale')))
+      .all();
+    for (const movement of sold) {
+      insertStockMovement(
+        tx,
+        { productId: movement.productId, qtyDelta: -movement.qtyDelta, reason: 'void', refId: id },
+        now,
+      );
+    }
+
+    const credit = tx
+      .select()
+      .from(khataEntries)
+      .where(and(eq(khataEntries.refId, id), eq(khataEntries.kind, 'credit_sale')))
+      .all();
+    for (const entry of credit) {
+      insertKhataEntry(
+        tx,
+        {
+          customerId: entry.customerId,
+          kind: 'adjustment',
+          deltaPaise: -entry.deltaPaise,
+          refId: id,
+        },
+        now,
+      );
+    }
+  });
 }

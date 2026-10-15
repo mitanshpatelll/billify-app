@@ -47,6 +47,10 @@ export default function ShopLayout() {
         <Stack.Screen name="stock/low" />
         <Stack.Screen name="products/[id]" />
         <Stack.Screen name="customers/[id]" />
+        <Stack.Screen name="summary" />
+        <Stack.Screen name="bills/index" />
+        <Stack.Screen name="bills/[id]" />
+        <Stack.Screen name="edit-shop" />
         <Stack.Screen name="bill-qr" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="customer-picker" options={{ ...sheet, sheetAllowedDetents: [0.75] }} />
         <Stack.Screen name="quick-add" options={{ ...sheet, sheetAllowedDetents: [0.92] }} />
