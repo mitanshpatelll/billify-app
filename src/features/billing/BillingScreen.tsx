@@ -30,12 +30,13 @@ import {
   StatusPill,
   SwipeToRemove,
   Text,
+  TextButton,
   TextField,
   Tile,
 } from '@/ui';
 
 import { useNextBillNumber } from './bills';
-import { cartTotalPaise, lineTotalPaise, useCart } from './cart-store';
+import { cartTotalPaise, lineTotalPaise, useCart, type CartLine } from './cart-store';
 import { BarcodeScanner } from './components/BarcodeScanner';
 import { isStorableBarcode } from './scan-gate';
 
@@ -64,6 +65,14 @@ export function BillingScreen() {
   }, [focused]);
 
   const total = cartTotalPaise(lines);
+
+  // A swiped-away line can come back for a few seconds (a swipe is easy to make by mistake).
+  const [removed, setRemoved] = useState<CartLine | null>(null);
+  useEffect(() => {
+    if (!removed) return;
+    const timer = setTimeout(() => setRemoved(null), 5000);
+    return () => clearTimeout(timer);
+  }, [removed]);
 
   // Loose items ask how much (a weight preset, a typed kg, or "₹20 worth"); packets go in as 1.
   function addProduct(product: Product) {
@@ -187,7 +196,7 @@ export function BillingScreen() {
           contentContainerStyle={styles.quickKeys}
         >
           {quickKeys.map((product) => (
-            <Chip key={product.id} label={product.name} onPress={() => add(product)} />
+            <Chip key={product.id} label={product.name} onPress={() => addProduct(product)} />
           ))}
         </ScrollView>
       )}
@@ -207,6 +216,30 @@ export function BillingScreen() {
         }
       />
 
+      {removed ? (
+        <View style={styles.undo} accessibilityLiveRegion="polite">
+          <Text variant="bodySecondary" tone="muted" style={styles.flex} numberOfLines={1}>
+            Removed {removed.name}
+          </Text>
+          <TextButton
+            label="Undo"
+            onPress={() => {
+              animateNextLayout();
+              add(
+                {
+                  id: removed.productId,
+                  name: removed.name,
+                  unit: removed.unit,
+                  pricePaise: removed.unitPricePaise,
+                },
+                removed.qty,
+              );
+              setRemoved(null);
+            }}
+          />
+        </View>
+      ) : null}
+
       {lines.length ? (
         <ListGroup>
           {lines.map((line) => (
@@ -216,6 +249,7 @@ export function BillingScreen() {
               onRemove={() => {
                 animateNextLayout();
                 remove(line.productId);
+                setRemoved(line);
               }}
             >
               <View style={[styles.line, line.productId === lastAddedId && styles.lineNew]}>
@@ -297,4 +331,5 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
   },
   totalBlock: { minWidth: 110 },
+  undo: { flexDirection: 'row', alignItems: 'center', gap: theme.space.sm },
 }));

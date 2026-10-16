@@ -158,7 +158,8 @@ export function CustomerKhataScreen() {
         />
       }
     >
-      <Tile>
+      {/* The whole card edits (a bigger target than the pencil in the corner). */}
+      <Tile onPress={() => setMode('edit')} accessibilityLabel={`${customer.name}. Edit customer`}>
         <View style={styles.person}>
           <Avatar name={customer.name} />
           <View style={styles.flex}>
@@ -167,12 +168,7 @@ export function CustomerKhataScreen() {
               {customer.phone ? formatPhone(customer.phone) : 'No phone number'}
             </Text>
           </View>
-          <IconButton
-            icon={Pencil}
-            variant="surface"
-            accessibilityLabel="Edit customer"
-            onPress={() => setMode('edit')}
-          />
+          <Icon icon={Pencil} color="onSurfaceVariant" />
         </View>
       </Tile>
 
@@ -377,8 +373,13 @@ function EditCustomerForm({
 }) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone ?? '');
+  // As saved: ₹2,000 shows "2000", ₹2,000.50 shows "2000.50" (rounding here would change it).
   const [limit, setLimit] = useState(
-    khataLimitPaise !== null ? String(Math.round(khataLimitPaise / 100)) : '',
+    khataLimitPaise === null
+      ? ''
+      : khataLimitPaise % 100
+        ? (khataLimitPaise / 100).toFixed(2)
+        : String(khataLimitPaise / 100),
   );
   const limitPaise = limit.trim() ? parseRupees(limit) : null;
   const errors = {
@@ -407,7 +408,7 @@ function EditCustomerForm({
           inTile
           value={limit}
           onChangeText={setLimit}
-          keyboardType="number-pad"
+          keyboardType="decimal-pad"
           placeholder="₹2,000"
           hint="Checkout warns when a khata bill goes over it. It never blocks."
           error={errors.limit}

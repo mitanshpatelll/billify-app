@@ -47,6 +47,13 @@ appId: com.glitchover.billify.dev
     from:
       text: '₹14.00' # the line total, at the right: a long swipe left
     direction: LEFT
+- assertVisible: 'Removed Maggi'
+- tapOn: 'Undo'
+- assertVisible: 'Maggi'
+- swipe:
+    from:
+      text: '₹14.00'
+    direction: LEFT
 - assertNotVisible: 'Maggi'
 - assertVisible: 'Total ₹42.02'
 
@@ -73,15 +80,19 @@ appId: com.glitchover.billify.dev
 # A khata limit of ₹50 on Ramesh
 - tapOn: 'Khata, tab.*'
 - tapOn: 'Ramesh Yadav.*'
-- tapOn: 'Edit customer'
+- waitForAnimationToEnd
+- tapOn: 'Ramesh Yadav. Edit customer'
 - tapOn:
     text: 'Khata limit \(optional\)'
     index: 1
 - inputText: '50'
+- tapOn: 'Checkout warns when a khata bill goes over it.*' # puts the number pad away
 - tapOn: 'Save customer'
 - assertVisible: '.*limit ₹50.*'
 - tapOn: 'Back'
+- waitForAnimationToEnd
 - tapOn: 'Bill, tab.*'
+- waitForAnimationToEnd
 
 # Bill 3: split 1 kg: ₹20 cash + ₹24 on khata → over the limit, saved anyway
 - tapOn: 'Sugar \(loose\)|Sugar'
@@ -90,15 +101,20 @@ appId: com.glitchover.billify.dev
 - tapOn: 'Pick customer'
 - tapOn: 'Ramesh Yadav.*'
 - tapOn: 'Split, Cash, UPI, khata'
+- scrollUntilVisible:
+    element: 'Rest by UPI.*'
 - tapOn:
     text: 'Cash received'
     index: 1
 - inputText: '20'
+- tapOn: 'Payment method' # puts the number pad away
 - tapOn:
     text: 'On khata'
     index: 1
 - inputText: '24'
 - tapOn: 'Payment method'
+- scrollUntilVisible:
+    element: 'Over Ramesh Yadav.*'
 - assertVisible: 'Rest by UPI: ₹0.00'
 - assertVisible: 'Over Ramesh Yadav’s khata limit of ₹50.00 by ₹62.00. You can still add it.'
 - tapOn: 'Mark as paid'

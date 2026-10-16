@@ -394,7 +394,7 @@ function DiscountPicker({
           <Chip
             label="Amount"
             selected={discount.kind === 'amount'}
-            onPress={() => onChange({ kind: 'amount', paise: typed ?? 0 })}
+            onPress={() => onChange({ kind: 'amount', paise: input.trim() ? (typed ?? -1) : 0 })}
           />
         </View>
         {discount.kind === 'amount' ? (
@@ -404,7 +404,8 @@ function DiscountPicker({
             value={input}
             onChangeText={(text) => {
               setInput(text);
-              onChange({ kind: 'amount', paise: parseRupees(text) ?? 0 });
+              // Empty = no discount; something that isn't an amount blocks saving (-1).
+              onChange({ kind: 'amount', paise: text.trim() ? (parseRupees(text) ?? -1) : 0 });
             }}
             placeholder="₹0.00"
             keyboardType="decimal-pad"

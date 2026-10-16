@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
@@ -42,9 +42,12 @@ export function QtySheet() {
   const lines = useCart((state) => state.lines);
   const { add, setQty, remove } = useCart.getState();
   const line = params.edit ? lines.find((item) => item.productId === params.edit) : undefined;
-  const [product] = useState(() =>
-    params.product ? productsRepo.getProduct(db, params.product) : undefined,
-  );
+  const [product] = useState(() => {
+    const found = params.product ? productsRepo.getProduct(db, params.product) : undefined;
+    return found && !found.deletedAt ? found : undefined; // a removed item can't be billed
+  });
+  // One tap, one change: a second tap before the sheet closes must not add it again.
+  const applied = useRef(false);
   const item = line
     ? { id: line.productId, name: line.name, unit: line.unit, pricePaise: line.unitPricePaise }
     : product
@@ -80,15 +83,18 @@ export function QtySheet() {
               : amountPaise / item.pricePaise,
           )
         : null
-      : typedQty !== null && item.unit === 'pcs' && !Number.isInteger(typedQty)
-        ? null
+      : typedQty !== null &&
+          (item.unit === 'pcs' || item.unit === 'g') &&
+          !Number.isInteger(typedQty)
+        ? null // pieces and grams are whole numbers
         : typedQty;
   const valid = qty !== null && qty > 0 && qty <= MAX_QTY;
 
   // No LayoutAnimation here: on the new architecture it crashes the app when it runs while the
   // sheet is being dismissed (React's LayoutAnimationDelegateProxy aborts).
   function apply(value: number) {
-    if (!item) return;
+    if (!item || applied.current) return;
+    applied.current = true;
     if (line) setQty(item.id, value);
     else add(item, value);
     router.back();
@@ -156,7 +162,7 @@ export function QtySheet() {
                 input && !valid
                   ? mode === 'amount'
                     ? 'Enter an amount, like 20 or 45.50'
-                    : item.unit === 'pcs'
+                    : item.unit === 'pcs' || item.unit === 'g'
                       ? 'Enter a whole number'
                       : 'Enter a quantity, like 0.75'
                   : undefined
@@ -183,6 +189,8 @@ export function QtySheet() {
             <TextButton
               label="Remove from bill"
               onPress={() => {
+                if (applied.current) return;
+                applied.current = true;
                 remove(line.productId);
                 router.back();
               }}

@@ -92,6 +92,9 @@ function validate(input: NewBill): { total: number; discount: number } {
     (sum, line) => sum + lineTotalPaise(roundQty(line.qty), line.unitPricePaise),
     0,
   );
+  if (subtotal < 1 || subtotal > MAX_PAISE) {
+    throw new RepoError('INVALID_TOTAL', 'Check the bill total');
+  }
   const discount = input.discountPaise ?? 0;
   if (!Number.isInteger(discount) || discount < 0 || discount >= subtotal) {
     throw new RepoError('INVALID_DISCOUNT', 'The discount must be less than the bill');

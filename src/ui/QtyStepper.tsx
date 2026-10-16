@@ -38,7 +38,7 @@ export function QtyStepper({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Quantity ${value}`}
-          accessibilityHint={`Type the quantity of ${itemLabel}`}
+          accessibilityHint={`Type the quantity of ${itemLabel}, or remove it`}
           onPress={onPressValue}
           style={({ pressed }) => [styles.valueButton, pressed && styles.pressed]}
         >
