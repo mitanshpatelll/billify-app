@@ -64,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         {/* 21 Public bill: open to everyone, signed in or not. */}
         <Stack.Screen name="b/[token]" />
+        <Stack.Screen name="k/[token]" />
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="(auth)/welcome" />
           <Stack.Screen name="(auth)/sign-in" />

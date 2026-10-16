@@ -76,7 +76,7 @@ it('summarises what is due, and what came in / went out this week', () => {
   khataBill(ramesh.id, 50_000, lastWeek);
   khataBill(ramesh.id, 20_000, new Date('2026-10-13T10:00:00Z'));
   khataBill(sunita.id, 30_000, new Date('2026-10-14T10:00:00Z'));
-  khataRepo.recordPayment(db, ramesh.id, 40_000, 'cash', new Date('2026-10-15T09:00:00Z'));
+  khataRepo.recordPayment(db, ramesh.id, 40_000, 'cash', { now: new Date('2026-10-15T09:00:00Z') });
 
   expect(khataRepo.khataSummary(db, monday)).toEqual({
     toCollectPaise: 30_000 + 30_000,
@@ -89,7 +89,7 @@ it('summarises what is due, and what came in / went out this week', () => {
 
 it('history is newest first, with the bill number of each credit sale', () => {
   const bill = khataBill(ramesh.id, 42_000, new Date('2026-10-12T04:12:00Z'));
-  khataRepo.recordPayment(db, ramesh.id, 10_000, 'cash', new Date('2026-10-13T04:00:00Z'));
+  khataRepo.recordPayment(db, ramesh.id, 10_000, 'cash', { now: new Date('2026-10-13T04:00:00Z') });
   const { entries } = khataRepo.customerKhata(db, ramesh.id);
   expect(entries.map((e) => [e.kind, e.deltaPaise, e.billNumber, e.method])).toEqual([
     ['settlement', -10_000, null, 'cash'],

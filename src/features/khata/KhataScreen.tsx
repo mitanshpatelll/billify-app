@@ -1,17 +1,20 @@
 import { router, useIsFocused } from 'expo-router';
-import { BookOpen, Search } from 'lucide-react-native';
-import { useState } from 'react';
+import { BadgeIndianRupee, BookOpen, Search } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { ago } from '@/lib/dates';
+import { formatRupees } from '@/lib/money';
 import {
   Avatar,
   EmptyState,
+  Icon,
   LargeTitle,
   ListGroup,
   ListRow,
   Money,
   Screen,
+  SectionHeader,
   SegmentedControl,
   Text,
   TextField,
@@ -26,6 +29,7 @@ import {
   type KhataFilter,
 } from './khata';
 import { BalanceText } from './BalanceText';
+import { usePaymentClaims } from './payment-claims';
 
 const FILTERS: { value: KhataFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -37,8 +41,14 @@ const FILTERS: { value: KhataFilter; label: string }[] = [
 export function KhataScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<KhataFilter>('all');
-  useIsFocused(); // re-render on focus: "this week" moves on by itself on Monday
+  const focused = useIsFocused(); // re-render on focus: "this week" moves on by itself on Monday
   const summary = useKhataSummary();
+  // "I've paid" from khata pages (D27), online: refreshed whenever the tab comes back.
+  const claims = usePaymentClaims();
+  const { refetch: refetchClaims } = claims;
+  useEffect(() => {
+    if (focused) void refetchClaims();
+  }, [focused, refetchClaims]);
   const rows = useCustomerBalances(query, filter);
 
   return (
@@ -74,6 +84,28 @@ export function KhataScreen() {
           <Money paise={summary.givenSincePaise} variant="numberTileSmall" showPaise={false} />
         </Tile>
       </TileRow>
+
+      {claims.data?.length ? (
+        <>
+          <SectionHeader title="Payments to confirm" />
+          <ListGroup>
+            {claims.data.map((claim) => (
+              <ListRow
+                key={claim.id}
+                title={claim.customerName}
+                subtitle={`Says they paid ${formatRupees(claim.amountPaise)} · ${ago(claim.createdAt)}`}
+                leading={<Icon icon={BadgeIndianRupee} color="primary" />}
+                onPress={() =>
+                  router.push({
+                    pathname: '/shop/customers/[id]',
+                    params: { id: claim.customerId },
+                  })
+                }
+              />
+            ))}
+          </ListGroup>
+        </>
+      ) : null}
 
       <SegmentedControl
         options={FILTERS}

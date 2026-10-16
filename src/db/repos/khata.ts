@@ -106,6 +106,7 @@ function customersColumns() {
     name: customers.name,
     phone: customers.phone,
     khataLimitPaise: customers.khataLimitPaise,
+    khataToken: customers.khataToken,
     linkedUserId: customers.linkedUserId,
   };
 }
@@ -175,12 +176,13 @@ export function customerKhata(
  * The customer paid back (User Flows §4): a settlement entry for minus the amount. Paying more
  * than is due is allowed; the balance then shows as an advance.
  */
+/** A payment back (a settlement), recorded on this phone and synced. */
 export function recordPayment(
   db: Db,
   customerId: string,
   amountPaise: number,
   method: SettlementMethod,
-  now = new Date(),
+  { now = new Date() }: { now?: Date } = {},
 ): KhataEntryRow {
   if (!Number.isInteger(amountPaise) || amountPaise < 1 || amountPaise > MAX_PAISE) {
     throw new RepoError('INVALID_AMOUNT', 'Enter the amount received');

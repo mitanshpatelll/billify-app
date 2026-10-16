@@ -16,6 +16,8 @@ import { StyleSheet } from 'react-native-unistyles';
 import { isApiError } from '@/api/client';
 import { isRepoError } from '@/db/repos';
 import { unlinkCustomer } from '@/features/customer-bills/api';
+import { ago } from '@/lib/dates';
+import { confirmAction } from '@/lib/confirm';
 import { formatPhone, maskPhone, useCustomer } from '@/features/customers/customers';
 import { khataReminderText, whatsAppLink } from '@/features/sharing/links';
 import { useShop } from '@/features/shop/shop';
@@ -45,7 +47,15 @@ import {
   type TileVariant,
 } from '@/ui';
 
-import { recordPayment, updateCustomer, useCustomerKhata, type KhataLine } from './khata';
+import {
+  ensureKhataToken,
+  recordPayment,
+  rotateKhataToken,
+  updateCustomer,
+  useCustomerKhata,
+  type KhataLine,
+} from './khata';
+import { confirmClaim, rejectClaim, usePaymentClaims, type PaymentClaim } from './payment-claims';
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
 
@@ -62,7 +72,14 @@ export function CustomerKhataScreen() {
   // Unlinked online just now; the phone's copy catches up on the next pull.
   const [unlinked, setUnlinked] = useState(false);
   // A claim or unlink happens on the server: opening the page asks for a pull to show it.
-  useFocusEffect(useCallback(() => requestSync(), []));
+  const claims = usePaymentClaims(id);
+  const { refetch: refetchClaims } = claims;
+  useFocusEffect(
+    useCallback(() => {
+      requestSync();
+      void refetchClaims();
+    }, [refetchClaims]),
+  );
 
   if (!customer || customer.deletedAt) {
     return (
@@ -90,6 +107,8 @@ export function CustomerKhataScreen() {
       duePaise: balancePaise,
       shopName: shop.name,
       upiId: shop.upiId,
+      // The link works once this customer has synced (the page says so until then).
+      khataToken: ensureKhataToken(customer.id),
     });
     const open = () =>
       Linking.openURL(whatsAppLink(text, customer.phone)).catch(() =>
@@ -121,6 +140,8 @@ export function CustomerKhataScreen() {
             unlinkCustomer(customer.id)
               .then(() => {
                 setUnlinked(true);
+                // The khata link they had stops working too (it could save the khata again).
+                rotateKhataToken(customer.id);
                 requestSync({ force: true });
               })
               .catch((err: unknown) =>
@@ -212,6 +233,15 @@ export function CustomerKhataScreen() {
         <ErrorBanner title="Not done" message={error} onDismiss={() => setError(null)} />
       ) : null}
 
+      {(claims.data ?? []).map((claim) => (
+        <ClaimTile
+          key={claim.id}
+          claim={claim}
+          onDone={() => void refetchClaims()}
+          onError={setError}
+        />
+      ))}
+
       {mode === 'pay' ? (
         <PaymentForm
           duePaise={Math.max(balancePaise, 0)}
@@ -267,6 +297,70 @@ export function CustomerKhataScreen() {
         </ListGroup>
       )}
     </Screen>
+  );
+}
+
+/** "I've paid" from the khata page (D27): the shop checks its UPI app, then answers. */
+function ClaimTile({
+  claim,
+  onDone,
+  onError,
+}: {
+  claim: PaymentClaim;
+  onDone: () => void;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const amount = formatRupees(claim.amountPaise);
+  const offline = (err: unknown) =>
+    isApiError(err, 'NETWORK_ERROR') || isApiError(err, 'TIMEOUT')
+      ? 'No internet connection. Answering needs the internet.'
+      : 'Couldn’t answer. Try again in a minute.';
+
+  async function answer(action: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await action();
+      onDone();
+    } catch (err) {
+      if (isApiError(err, 'CLAIM_DECIDED')) onDone();
+      else onError(offline(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Tile variant="selected">
+      <View style={styles.form}>
+        <View>
+          <Text variant="bodyStrong" tone="primary">
+            Says they paid {amount} by UPI
+          </Text>
+          <Text variant="bodySecondary" tone="primary">
+            {ago(claim.createdAt)}
+            {claim.utr ? ` · UPI ref ${claim.utr}` : ''} · check your UPI app first
+          </Text>
+        </View>
+        <Button
+          label={`Confirm ${amount}`}
+          icon={CircleCheck}
+          loading={busy}
+          onPress={() => void answer(() => confirmClaim(claim))}
+        />
+        <TextButton
+          label="Not received"
+          onPress={() =>
+            confirmAction({
+              title: 'Not received?',
+              message: `The customer’s page will say you didn’t find this ${amount} payment.`,
+              confirmLabel: 'Not received',
+              onConfirm: () => void answer(() => rejectClaim(claim)),
+            })
+          }
+        />
+      </View>
+    </Tile>
   );
 }
 

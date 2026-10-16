@@ -47,3 +47,15 @@ it('builds the khata reminder', () => {
     'Namaste Ramesh Yadav, ₹1,240.00 is due at Sharma Kirana. You can pay at the shop, or by UPI to sharmakirana@okaxis. Thank you!',
   );
 });
+
+it('adds the khata page link to the reminder when the customer has one', () => {
+  expect(
+    khataReminderText({
+      customerName: 'Ramesh Yadav',
+      duePaise: 124_000,
+      shopName: 'Sharma Kirana',
+      upiId: 'sharmakirana@okaxis',
+      khataToken: 'AAAAAAAAAAAAAAAAAAAAAA',
+    }),
+  ).toMatch(new RegExp(`\\nPay or tell us you paid: ${env.webUrl}/k/AAAAAAAAAAAAAAAAAAAAAA$`));
+});

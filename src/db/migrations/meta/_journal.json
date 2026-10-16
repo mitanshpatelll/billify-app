@@ -29,6 +29,13 @@
       "when": 1792067664719,
       "tag": "0003_bill_discount_khata_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792146914684,
+      "tag": "0004_customer_khata_token",
+      "breakpoints": true
     }
   ]
 }

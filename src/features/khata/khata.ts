@@ -48,6 +48,16 @@ export function recordPayment(
 }
 
 /** Throws RepoError. */
+/** The khata page token for the reminder link (made and synced if this customer has none). */
+export function ensureKhataToken(customerId: string): string {
+  return customersRepo.ensureKhataToken(db, customerId);
+}
+
+/** After an unlink: the old khata page link stops working. */
+export function rotateKhataToken(customerId: string): void {
+  customersRepo.rotateKhataToken(db, customerId);
+}
+
 export function updateCustomer(
   id: string,
   input: { name?: string; phone?: string | null; khataLimitPaise?: number | null },

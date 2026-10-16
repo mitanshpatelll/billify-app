@@ -7,6 +7,11 @@ export function billUrl(publicToken: string): string {
   return `${env.webUrl}/b/${publicToken}`;
 }
 
+/** Khata page (D27): what's due, Pay by UPI, I've paid. No sign-in. */
+export function khataPageUrl(khataToken: string): string {
+  return `${env.webUrl}/k/${khataToken}`;
+}
+
 /** Free wa.me link from the shopkeeper's own WhatsApp. No phone = the shopkeeper picks a chat. */
 export function whatsAppLink(text: string, phone?: string | null): string {
   const to = phone ? `91${phone}` : '';
@@ -40,12 +45,25 @@ export function reorderText(shopName: string, lines: ReorderLine[]): string {
   return [`Order from ${shopName}`, ...items, '', `Made with Billify · ${env.webUrl}`].join('\n');
 }
 
-type Reminder = { customerName: string; duePaise: number; shopName: string; upiId: string };
+type Reminder = {
+  customerName: string;
+  duePaise: number;
+  shopName: string;
+  upiId: string;
+  /** The khata page token: the link to pay by UPI or say "I've paid" (D27). */
+  khataToken?: string | null;
+};
 
 /** 15 Customer khata → WhatsApp: a polite reminder with the amount and how to pay. */
-export function khataReminderText({ customerName, duePaise, shopName, upiId }: Reminder): string {
-  return (
+export function khataReminderText({
+  customerName,
+  duePaise,
+  shopName,
+  upiId,
+  khataToken,
+}: Reminder): string {
+  const text =
     `Namaste ${customerName}, ${formatRupees(duePaise)} is due at ${shopName}. ` +
-    `You can pay at the shop, or by UPI to ${upiId}. Thank you!`
-  );
+    `You can pay at the shop, or by UPI to ${upiId}. Thank you!`;
+  return khataToken ? `${text}\nPay or tell us you paid: ${khataPageUrl(khataToken)}` : text;
 }

@@ -314,6 +314,7 @@ export interface paths {
                       name: string;
                       phone: string | null;
                       khataLimitPaise: number | null;
+                      khataToken: string | null;
                       /** Format: uuid */
                       linkedUserId: string | null;
                     };
@@ -1151,6 +1152,255 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/v1/public/khata/{token}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Khata page data (no sign-in) */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          token: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              shop: {
+                name: string;
+                upiId: string;
+              };
+              duePaise: number;
+              claim: {
+                amountPaise: number;
+                /** @enum {string} */
+                status: 'pending' | 'confirmed' | 'not_received';
+                /** Format: date-time */
+                createdAt: string;
+              } | null;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/public/khata/{token}/paid': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** I've paid: tell the shop (no sign-in) */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          token: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            amountPaise: number;
+            utr?: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              amountPaise: number;
+              /** @enum {string} */
+              status: 'pending' | 'confirmed' | 'not_received';
+              /** Format: date-time */
+              createdAt: string;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/public/khata/{token}/claim': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Save this khata to my account */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          token: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              shopName: string;
+              customerName: string;
+              already: boolean;
+            };
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/shops/me/payment-claims': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** "I've paid" claims */
+    get: {
+      parameters: {
+        query?: {
+          status?: 'pending' | 'confirmed' | 'not_received' | 'all';
+          customerId?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              claims: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                customerId: string;
+                customerName: string;
+                amountPaise: number;
+                utr: string | null;
+                /** @enum {string} */
+                status: 'pending' | 'confirmed' | 'not_received';
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                decidedAt: string | null;
+              }[];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/shops/me/payment-claims/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Confirm a payment, or say it was not received */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            status: 'confirmed' | 'not_received';
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'pending' | 'confirmed' | 'not_received';
+            };
+          };
+        };
+      };
+    };
     trace?: never;
   };
 }

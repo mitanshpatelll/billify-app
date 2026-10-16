@@ -1,0 +1,83 @@
+# D27 khata page (User Flows §4): the reminder's /k/<token> link. The customer sees what is due,
+# says "I've paid" with a UPI reference, saves the khata to Billify; the shop sees the payment
+# to confirm on 04, confirms it on 15, and the khata is settled.
+# Needs a seeded shop (scripts/e2e-seed-customer.mjs): KHATA_PAGE_TOKEN, OWNER_EMAIL.
+appId: com.glitchover.billify.dev
+---
+- evalScript: ${output.email = 'payer-' + Date.now() + '@billify.test'}
+- clearState
+- clearKeychain
+- runFlow: _open-app.yaml
+
+# The customer opens the link from the reminder (not signed in)
+- openLink: billify://k/${KHATA_PAGE_TOKEN}
+- runFlow:
+    when:
+      visible: 'Open in .*'
+    commands:
+      - tapOn: 'Open'
+- extendedWaitUntil:
+    visible: 'Your khata'
+    timeout: 30000
+- assertVisible: 'Sharma Kirana'
+- assertVisible: '₹420.00'
+- assertVisible: 'Pay ₹420.00 by UPI'
+
+# I've paid, with the UPI reference
+- tapOn: 'I’ve paid'
+- tapOn:
+    text: 'UPI reference \(optional\)'
+    index: 1
+- inputText: '412345678901'
+- tapOn: 'Tell Sharma Kirana you paid' # puts the number pad away
+- tapOn: 'Send to the shop'
+- extendedWaitUntil:
+    visible: 'You told Sharma Kirana you paid ₹420.00.*'
+    timeout: 15000
+- assertVisible: '₹420.00' # still due: only the shop's confirm changes it
+
+# Save to Billify → sign in → My khata
+- scrollUntilVisible:
+    element: 'Save to Billify'
+- tapOn: 'Save to Billify'
+- tapOn:
+    text: 'Email.*'
+    index: 1
+- eraseText: 40
+- inputText: ${output.email}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'My khata'
+    timeout: 30000
+- assertVisible: '.*Sharma Kirana.*'
+- tapOn: 'Account, tab.*'
+- tapOn: 'Sign out'
+
+# The shop: sign in, the payment waits on 04, confirm it on 15
+- extendedWaitUntil:
+    visible: 'How will you use Billify\?'
+    timeout: 15000
+- tapOn: 'I run a shop.*'
+- tapOn: 'Continue'
+- tapOn:
+    text: 'Email.*'
+    index: 1
+- eraseText: 40
+- inputText: ${OWNER_EMAIL}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: 'Bill A-203'
+    timeout: 60000
+- tapOn: 'Khata, tab.*'
+- extendedWaitUntil:
+    visible: 'Payments to confirm'
+    timeout: 15000
+- tapOn: 'Ramesh Yadav, Says they paid ₹420.00.*'
+- waitForAnimationToEnd
+- assertVisible: 'Says they paid ₹420.00 by UPI'
+- assertVisible: '.*UPI ref 412345678901.*'
+- tapOn: 'Confirm ₹420.00'
+- extendedWaitUntil:
+    visible: 'Settled'
+    timeout: 15000
+- assertNotVisible: 'Says they paid ₹420.00 by UPI'

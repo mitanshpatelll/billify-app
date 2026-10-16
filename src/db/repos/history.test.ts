@@ -164,8 +164,8 @@ describe('daySummary', () => {
       [{ method: 'cash', amountPaise: 4400 }],
       new Date('2026-10-14T20:00:00+05:30'),
     );
-    khataRepo.recordPayment(db, ramesh.id, 2000, 'cash', at('13:00'));
-    khataRepo.recordPayment(db, ramesh.id, 500, 'upi', at('14:00'));
+    khataRepo.recordPayment(db, ramesh.id, 2000, 'cash', { now: at('13:00') });
+    khataRepo.recordPayment(db, ramesh.id, 500, 'upi', { now: at('14:00') });
 
     const summary = summaryRepo.daySummary(db, day, nextDay);
 

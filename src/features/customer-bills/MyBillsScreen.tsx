@@ -20,9 +20,9 @@ import {
   Tile,
 } from '@/ui';
 
-import { claimBill, useMyBills } from './api';
+import { useMyBills } from './api';
 import { pendingClaim } from './pending-claim';
-import { claimMessage, openSavedBill } from './SaveToBillify';
+import { claimMessage, finishSave } from './SaveToBillify';
 
 const dayFormat = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
@@ -41,13 +41,11 @@ export function MyBillsScreen() {
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
-    const token = pendingClaim.take();
-    if (token) {
-      claimBill(token)
-        .then((result) => {
-          if (mounted.current) openSavedBill(result, 'push');
-        })
-        .catch((err: unknown) => setClaimError(claimMessage(err)));
+    const save = pendingClaim.take();
+    if (save) {
+      finishSave(save, 'push', () => mounted.current).catch((err: unknown) =>
+        setClaimError(claimMessage(err)),
+      );
     }
     return () => {
       mounted.current = false;

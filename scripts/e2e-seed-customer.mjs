@@ -1,7 +1,8 @@
-// For e2e/customer.yaml and e2e/shop-queries.yaml: a new shop on the local API (started with
+// For e2e/customer.yaml, shop-queries.yaml and khata-page.yaml: a new shop on the local API (started with
 // DEV_SIGN_IN=true) with a bill on Ramesh's khata and a walk-in bill. Prints the Maestro env,
 // including a session token for that test shop: local development only, never in CI logs.
-//   node scripts/e2e-seed-customer.mjs [apiUrl]  → KHATA_TOKEN=… WALKIN_TOKEN=… OWNER_TOKEN=… OWNER_EMAIL=…
+//   node scripts/e2e-seed-customer.mjs [apiUrl]
+//   → KHATA_TOKEN=… WALKIN_TOKEN=… OWNER_TOKEN=… OWNER_EMAIL=… KHATA_PAGE_TOKEN=…
 import { randomBytes } from 'node:crypto';
 
 const API = process.argv[2] ?? 'http://localhost:3100';
@@ -38,7 +39,7 @@ await call(
 await call('PATCH', '/v1/shops/me', { phone: '9876543210' }, owner.token);
 const ins = (table, data) => ({ mutationId: uuidv7(), table, op: 'insert', data });
 const now = new Date().toISOString();
-const ramesh = { id: uuidv7(), name: 'Ramesh Yadav', phone: '9876504521' };
+const ramesh = { id: uuidv7(), name: 'Ramesh Yadav', phone: '9876504521', khataToken: token() };
 const khataBill = {
   id: uuidv7(),
   number: 'A-201',
@@ -99,5 +100,6 @@ console.log(
     `WALKIN_TOKEN=${walkIn.publicToken}`,
     `OWNER_TOKEN=${owner.token}`,
     `OWNER_EMAIL=${OWNER}`,
+    `KHATA_PAGE_TOKEN=${ramesh.khataToken}`,
   ].join(' '),
 );

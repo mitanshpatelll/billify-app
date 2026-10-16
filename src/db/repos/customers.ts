@@ -1,7 +1,7 @@
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 import { MAX_PAISE } from '@/lib/domain';
-import { newId } from '@/lib/ids';
+import { newId, newPublicToken } from '@/lib/ids';
 import { normalizePhone } from '@/lib/phone';
 
 import { customers, type CustomerRow } from '../schema';
@@ -35,12 +35,46 @@ export function createCustomer(db: Db, input: NewCustomer, now = new Date()): Cu
       name,
       phone,
       khataLimitPaise: null,
+      khataToken: newPublicToken(),
       linkedUserId: null,
     };
     tx.insert(customers).values(row).run();
     enqueue(tx, 'customers', 'insert', insertData(row), at);
     return row;
   });
+}
+
+/**
+ * The customer's khata page token, made now (and synced) for a customer created before khata
+ * pages existed. The reminder link needs it.
+ */
+export function ensureKhataToken(db: Db, id: string, now = new Date()): string {
+  return db.transaction((tx) => {
+    const current = getCustomer(tx, id);
+    if (!current || current.deletedAt) {
+      throw new RepoError('CUSTOMER_NOT_FOUND', 'This customer is gone');
+    }
+    if (current.khataToken) return current.khataToken;
+    const khataToken = newPublicToken();
+    const at = now.toISOString();
+    tx.update(customers).set({ khataToken, updatedAt: at }).where(eq(customers.id, id)).run();
+    enqueue(tx, 'customers', 'update', { id, khataToken }, at);
+    return khataToken;
+  });
+}
+
+/**
+ * A new khata page link: the old one stops working (after an unlink, so a link the wrong person
+ * had shows nothing any more).
+ */
+export function rotateKhataToken(db: Db, id: string, now = new Date()): string {
+  const khataToken = newPublicToken();
+  const at = now.toISOString();
+  db.transaction((tx) => {
+    tx.update(customers).set({ khataToken, updatedAt: at }).where(eq(customers.id, id)).run();
+    enqueue(tx, 'customers', 'update', { id, khataToken }, at);
+  });
+  return khataToken;
 }
 
 export function getCustomer(db: Db, id: string): CustomerRow | undefined {

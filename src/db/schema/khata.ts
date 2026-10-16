@@ -12,6 +12,8 @@ export const customers = sqliteTable('customers', {
   phone: text('phone'),
   /** Optional khata limit (D27): checkout warns over it, never blocks. */
   khataLimitPaise: integer('khata_limit_paise'),
+  /** The khata page link, /k/<token> (D27): 16 random bytes, like a bill's public token. */
+  khataToken: text('khata_token'),
   /** Server-owned (set by the customer's claim, M2): pulled, never pushed. */
   linkedUserId: text('linked_user_id'),
 });

@@ -61,6 +61,11 @@ export function claimBill(token: string) {
   return unwrap(api.POST('/v1/public/bills/{token}/claim', { params: { path: { token } } }));
 }
 
+/** Save to Billify from the khata page (D27): the same customer-record claim as from a bill. */
+export function claimKhata(token: string) {
+  return unwrap(api.POST('/v1/public/khata/{token}/claim', { params: { path: { token } } }));
+}
+
 export type QueryType = 'missing' | 'extra' | 'wrong_price' | 'other';
 
 export function raiseQuery(billId: string, type: QueryType, note: string) {

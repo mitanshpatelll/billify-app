@@ -9,8 +9,8 @@ import { queryClient } from '@/api/query-client';
 import { selectSignedIn, useSession } from '@/features/auth/session-store';
 import { Button, ErrorBanner, Text } from '@/ui';
 
-import { claimBill, type ClaimResult } from './api';
-import { pendingClaim } from './pending-claim';
+import { claimBill, claimKhata, type ClaimResult } from './api';
+import { pendingClaim, type PendingSave } from './pending-claim';
 
 export function claimMessage(error: unknown): string {
   if (isApiError(error, 'CUSTOMER_ALREADY_CLAIMED')) {
@@ -29,11 +29,37 @@ export function openSavedBill(result: ClaimResult, how: 'push' | 'replace' = 're
 }
 
 /**
- * 21 → "Save to Billify" (User Flows §7): signed in as a customer, the bill (with a customer on
- * it: every bill of that customer at this shop, and the khata) is saved at once; otherwise
- * sign-in comes first and My bills finishes the job, then opens the bill.
+ * Saves a bill link or a khata page link to the signed-in customer, then opens what was saved:
+ * the bill (23), or My khata (25). `isCurrent` false = the customer moved on: don't navigate.
  */
-export function SaveToBillify({ token }: { token: string }) {
+export async function finishSave(
+  save: PendingSave,
+  how: 'push' | 'replace',
+  isCurrent: () => boolean,
+): Promise<void> {
+  if (save.kind === 'bill') {
+    const result = await claimBill(save.token);
+    if (isCurrent()) openSavedBill(result, how);
+    return;
+  }
+  await claimKhata(save.token);
+  void queryClient.invalidateQueries({ queryKey: ['me'] });
+  if (isCurrent()) router[how]('/me/khata');
+}
+
+/**
+ * 21 → "Save to Billify" (User Flows §7), also on the khata page (D27, kind="khata"): signed in as
+ * a customer, the bill (with a customer on it: every bill of that customer at this shop, and the
+ * khata) or the khata is saved at once; otherwise sign-in comes first and the page (or My bills)
+ * finishes the job.
+ */
+export function SaveToBillify({
+  token,
+  kind = 'bill',
+}: {
+  token: string;
+  kind?: PendingSave['kind'];
+}) {
   const signedIn = useSession(selectSignedIn);
   const role = useSession((state) => state.role);
   const chooseRole = useSession((state) => state.chooseRole);
@@ -52,8 +78,7 @@ export function SaveToBillify({ token }: { token: string }) {
   async function claim() {
     setBusy(true);
     try {
-      const result = await claimBill(token);
-      if (mounted.current) openSavedBill(result);
+      await finishSave({ token, kind }, 'replace', () => mounted.current);
     } catch (err) {
       setError(claimMessage(err));
     } finally {
@@ -63,12 +88,12 @@ export function SaveToBillify({ token }: { token: string }) {
 
   // Back from signing in (started by the tap below): finish the save.
   useEffect(() => {
-    if (!customer || !pendingClaim.take(token)) return;
-    claimBill(token)
-      .then((result) => {
-        if (mounted.current) openSavedBill(result);
-      })
-      .catch((err: unknown) => setError(claimMessage(err)));
+    if (!customer) return;
+    const save = pendingClaim.take(token);
+    if (!save) return;
+    finishSave(save, 'replace', () => mounted.current).catch((err: unknown) =>
+      setError(claimMessage(err)),
+    );
   }, [customer, token]);
 
   // A shop owner's phone is for billing; saving bills is for customers.
@@ -77,7 +102,7 @@ export function SaveToBillify({ token }: { token: string }) {
   function save() {
     setError(null);
     if (!signedIn) {
-      pendingClaim.set(token);
+      pendingClaim.set(token, kind);
       chooseRole('customer');
       router.push('/sign-in');
       return;
